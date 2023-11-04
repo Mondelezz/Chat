@@ -48,10 +48,22 @@ namespace Quantum.Models
             }           
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Error, $"Исключение: {ex.Message}");                
+                _logger.Log(LogLevel.Error, $"Исключение: {ex.Message}");
+                RemoveWebSocketFromClients(webSocket);
             }
         }
-
+        private void RemoveWebSocketFromClients(WebSocket webSocket)
+        {
+            Locker.EnterWriteLock();
+            try
+            {
+                Clients.Remove(webSocket);
+            }
+            finally
+            {
+                Locker.ExitWriteLock();
+            }
+        }
         private async Task BroadcastMessageAsync(byte[] message, WebSocket webSocket)
         {
             Locker.EnterWriteLock();
