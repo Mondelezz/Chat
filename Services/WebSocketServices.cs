@@ -1,8 +1,8 @@
-﻿using Quantum.Interfaces;
+using Quantum.Interfaces;
 using System.Net.WebSockets;
 using System.Text;
 
-namespace Quantum.Services
+namespace Quantum.Models
 {
     public class WebSocketServices : IWebSocket
     {
@@ -13,10 +13,11 @@ namespace Quantum.Services
         {
             _logger = logger;
         }
+        /// <summary>
+        /// Метод выполняет широковещательную передачу сообщений всем подключенным клиентам.
+        /// </summary>
         public async Task WebSocketRequestAsync(WebSocket webSocket)
         {
-            List<WebSocket> clientsToRemove = new List<WebSocket>();
-            // Ввод блокировки в режим записи
             Locker.EnterWriteLock();
             try
             {
@@ -28,43 +29,48 @@ namespace Quantum.Services
                 // Гарантируется, что вызываемый объект выходит из режима записи
                 Locker.ExitWriteLock();
             }
-            while (true)
+            try
             {
-                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[4096]);
-                /// <summary>
-                /// result содержит информацию чтения данных из веб-сокета.
-                /// </summary>
-                WebSocketReceiveResult result = await webSocket.ReceiveAsync(buffer, CancellationToken.None);
-                for (int i = 0; i < Clients.Count; i++)
+                while (webSocket.State == WebSocketState.Open)
                 {
-                    WebSocket client = Clients[i];
-                    try
+                    ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[4096]);
+                    /// <summary>
+                    /// result содержит информацию чтения данных из веб-сокета.
+                    /// </summary>
+                    WebSocketReceiveResult result = await webSocket.ReceiveAsync(buffer, CancellationToken.None);
+                    if (result.MessageType == WebSocketMessageType.Text && result.EndOfMessage)
                     {
-                        if (client.State == WebSocketState.Open)
-                        {
-                            await client.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
-                            _logger.Log(LogLevel.Information, "Сообщение было отправлено клиенту");
+                        byte[] receivedBytes = buffer.Skip(buffer.Offset).Take(result.Count).ToArray();
 
-                        }
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        clientsToRemove.Add(client);
-                    }
+                        await BroadcastMessageAsync(receivedBytes, webSocket);
+                    }                  
                 }
-                Locker.EnterWriteLock();
-                try
-                {
-                    foreach (var client in clientsToRemove)
-                    {
-                        Clients.Remove(client);
-                    }
-                }
-                finally
-                {
-                    Locker.ExitWriteLock();
-                }
+            }           
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Error, $"Исключение: {ex.Message}");                
+            }
+        }
 
+        private async Task BroadcastMessageAsync(byte[] message, WebSocket webSocket)
+        {
+            Locker.EnterWriteLock();
+            try
+            {
+                // Отправить сообщение всем подключенным клиентам
+                foreach (var client in Clients)
+                {
+                    if (client.State == WebSocketState.Open)
+                    {
+                        ArraySegment<byte> buffer = new ArraySegment<byte>(message);
+                        await client.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                        _logger.Log(LogLevel.Information, "Сообщение было отправлено клиенту");
+                    }
+                }
+            }
+            finally
+            {
+                Locker.ExitWriteLock();
             }
         }
 
