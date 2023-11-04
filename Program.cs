@@ -1,7 +1,11 @@
+using Quantum.Interfaces;
+using Quantum.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IWebSocket, WebSocketServices>();
 
 var app = builder.Build();
 
