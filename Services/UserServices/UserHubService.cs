@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Quantum.Data;
 using Quantum.Interfaces.UserInterface;
 using Quantum.Models;
@@ -17,7 +17,6 @@ namespace Quantum.Services.UserServices
             _mapper = mapper;
             _logger = logger;
         }
-
         public async Task EnterUserInformation(UserDTO userDTO)
         {
             try
@@ -26,9 +25,14 @@ namespace Quantum.Services.UserServices
                 {
                     User user = _mapper.Map<User>(userDTO);
                     user.UserId = Guid.NewGuid();
-                    await _dataContext.Users.AddAsync(user);
-                    await _dataContext.SaveChangesAsync();
+
+                    await AddUserToDatabase(user);
+
                     _logger.Log(LogLevel.Information, "Данные были сохранены в базу данных");
+                }
+                else
+                {
+                    _logger.Log(LogLevel.Warning, "Введённые данные отсутствуют");
                 }
             }
             catch (Exception ex)
@@ -37,6 +41,10 @@ namespace Quantum.Services.UserServices
                 throw;
             }
         }
-
+        private async Task AddUserToDatabase(User user)
+        {
+            await _dataContext.Users.AddAsync(user);
+            await _dataContext.SaveChangesAsync();
+        }
     }
 }
