@@ -2,7 +2,7 @@ using Quantum.Interfaces;
 using System.Net.WebSockets;
 using System.Text;
 
-namespace Quantum.Models
+namespace Quantum.Services
 {
     public class WebSocketServices : IWebSocket
     {
@@ -13,10 +13,12 @@ namespace Quantum.Models
         {
             _logger = logger;
         }
+
         /// <summary>
-        /// Метод выполняет широковещательную передачу сообщений всем подключенным клиентам.
+        /// Добавление клиентов
         /// </summary>
-        public async Task HandleWebSocketRequestAsync(WebSocket webSocket)
+        /// <param name="webSocket"></param>
+        private void AddWebSocketToClient(WebSocket webSocket)
         {
             Locker.EnterWriteLock();
             try
@@ -29,6 +31,31 @@ namespace Quantum.Models
                 // Гарантируется, что вызываемый объект выходит из режима записи
                 Locker.ExitWriteLock();
             }
+        }
+
+        /// <summary>
+        /// Удаление клиентов
+        /// </summary>
+        /// <param name="webSocket"></param>
+        private void RemoveWebSocketFromClients(WebSocket webSocket)
+        {
+            Locker.EnterWriteLock();
+            try
+            {
+                Clients.Remove(webSocket);
+            }
+            finally
+            {
+                Locker.ExitWriteLock();
+            }
+        }
+
+        /// <summary>
+        /// Управленние веб-сокет соединениями
+        /// </summary>
+        public async Task HandleWebSocketRequestAsync(WebSocket webSocket)
+        {
+            AddWebSocketToClient(webSocket);           
             try
             {
                 while (webSocket.State == WebSocketState.Open)
@@ -42,7 +69,7 @@ namespace Quantum.Models
                     {
                         byte[] receivedBytes = buffer.Skip(buffer.Offset).Take(result.Count).ToArray();
 
-                        await BroadcastMessageAsync(receivedBytes, webSocket);
+                        await BroadcastMessageAsync(receivedBytes);
                     }                  
                 }
             }           
@@ -51,20 +78,9 @@ namespace Quantum.Models
                 _logger.Log(LogLevel.Error, $"Исключение: {ex.Message}");
                 RemoveWebSocketFromClients(webSocket);
             }
-        }
-        private void RemoveWebSocketFromClients(WebSocket webSocket)
-        {
-            Locker.EnterWriteLock();
-            try
-            {
-                Clients.Remove(webSocket);
-            }
-            finally
-            {
-                Locker.ExitWriteLock();
-            }
-        }
-        private async Task BroadcastMessageAsync(byte[] message, WebSocket webSocket)
+        } 
+        
+        private async Task BroadcastMessageAsync(byte[] message)
         {
             Locker.EnterWriteLock();
             try
@@ -85,6 +101,14 @@ namespace Quantum.Models
                 Locker.ExitWriteLock();
             }
         }
+        
+        public async Task SendWebSocketmessageToUser(byte[] message, string phoneNumber, WebSocket webSocket)
+        {
+            AddWebSocketToClient(webSocket);
+
+
+        }
+
 
         /// <summary>
         /// Метод Эхо.
