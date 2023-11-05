@@ -16,7 +16,7 @@ namespace Quantum.Models
         /// <summary>
         /// Метод выполняет широковещательную передачу сообщений всем подключенным клиентам.
         /// </summary>
-        public async Task WebSocketRequestAsync(WebSocket webSocket)
+        public async Task HandleWebSocketRequestAsync(WebSocket webSocket)
         {
             Locker.EnterWriteLock();
             try
