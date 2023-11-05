@@ -30,7 +30,7 @@ namespace Quantum.Controllers
                 /// </summary>
                 using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
                 _logger.Log(LogLevel.Information, "Установлено соединение через WebSocket");
-                await _webSocket.WebSocketRequestAsync(webSocket);
+                await _webSocket.HandleWebSocketRequestAsync(webSocket);
             }
             else
             {
