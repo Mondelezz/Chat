@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Quantum.Interfaces.UserInterface;
 using Quantum.Models.DTO;
@@ -15,11 +15,11 @@ namespace Quantum.Controllers
             _userHub = userHub;
         }
         [HttpPost("reg")]
-        public async Task EnterUserInformation([FromBody] UserDTO userDTO)
+        public async Task EnterUserInformation([FromBody] RegistrationUserDTO registrationUserDTO)
         {
             try
             {
-                await _userHub.EnterUserInformation(userDTO);                
+                await _userHub.EnterUserInformation(registrationUserDTO);                
             }
             catch (Exception)
             {
