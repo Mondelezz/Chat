@@ -60,14 +60,14 @@ namespace Quantum.Services
             {
                 while (webSocket.State == WebSocketState.Open)
                 {
-                    ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[4096]);
+                    ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
                     /// <summary>
                     /// result содержит информацию чтения данных из веб-сокета.
                     /// </summary>
-                    WebSocketReceiveResult result = await webSocket.ReceiveAsync(buffer, CancellationToken.None);
+                    WebSocketReceiveResult result = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Text && result.EndOfMessage)
                     {
-                        byte[] receivedBytes = buffer.Skip(buffer.Offset).Take(result.Count).ToArray();
+                        byte[] receivedBytes = buffers.Skip(buffers.Offset).Take(result.Count).ToArray();
 
                         await BroadcastMessageAsync(receivedBytes);
                     }                  
@@ -102,10 +102,40 @@ namespace Quantum.Services
             }
         }
         
-        public async Task SendWebSocketmessageToUser(byte[] message, string phoneNumber, WebSocket webSocket)
+        public async Task SendWebSocketmessageToUser(string phoneNumber, WebSocket webSocket)
         {
             AddWebSocketToClient(webSocket);
+            try
+            {
+                while (webSocket.State == WebSocketState.Open)
+                {
+                    ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
 
+                    WebSocketReceiveResult result = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
+
+                    if (result.MessageType == WebSocketMessageType.Text && result.EndOfMessage)
+                    {
+                        byte[] resceivedBytes = buffers.Skip(buffers.Offset).Take(result.Count).ToArray();
+
+                        Locker.EnterWriteLock();
+                        try
+                        {
+
+                        }
+                        catch (Exception)
+                        {
+
+                            throw;
+                        }
+                    }
+                    
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Warning, $"Исключение: {ex.Message}");
+                RemoveWebSocketFromClients(webSocket);
+            }
 
         }
 
