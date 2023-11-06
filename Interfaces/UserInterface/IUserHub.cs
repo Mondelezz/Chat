@@ -1,9 +1,9 @@
-﻿using Quantum.Models.DTO;
+using Quantum.Models.DTO;
 
 namespace Quantum.Interfaces.UserInterface
 {
     public interface IUserHub
     {
-        public Task EnterUserInformation(UserDTO userDTO);
+        public Task EnterUserInformation(RegistrationUserDTO registrationUserDTO);
     }
 }
