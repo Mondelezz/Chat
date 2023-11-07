@@ -52,7 +52,7 @@ namespace Quantum.Services
                 ClaimsIdentity identity = new ClaimsIdentity(new[]
                 {
                      new Claim(ClaimsIdentity.DefaultNameClaimType, user.UserName),
-                     new Claim(ClaimsIdentity.DefaultNameClaimType, user.PhoneNumber),
+                     new Claim("PhoneNumber", user.PhoneNumber),
                      new Claim("Id", user.UserId.ToString())
                 });
                 DateTime now = DateTime.UtcNow;

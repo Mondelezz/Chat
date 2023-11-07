@@ -3,7 +3,6 @@ using Quantum.Data;
 using Quantum.Interfaces.UserInterface;
 using Quantum.Models;
 using Quantum.Models.DTO;
-using System.ComponentModel.DataAnnotations;
 
 namespace Quantum.Services.UserServices
 {

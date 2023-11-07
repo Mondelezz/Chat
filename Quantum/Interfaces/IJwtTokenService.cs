@@ -1,6 +1,7 @@
 ﻿namespace Quantum.Interfaces
 {
-    public interface IJwtTokenService
+    public interface IJwtTokenProcess
     {
+        public string GetPhoneNumberFromJwtToken();
     }
 }

@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Quantum.Interfaces;
-using System.Net.WebSockets;
-using System.Text;
 
 namespace Quantum.Controllers
 {
@@ -17,6 +17,7 @@ namespace Quantum.Controllers
             _webSocket = webSocket;
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("message/get")]
         public async Task GetWebSocketAsync()
         {

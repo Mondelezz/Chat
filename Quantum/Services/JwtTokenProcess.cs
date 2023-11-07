@@ -1,6 +1,59 @@
-﻿namespace Quantum.Services
+﻿using Quantum.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+
+namespace Quantum.Services
 {
-    public class JwtTokenProcess
+    public class JwtTokenProcess : IJwtTokenProcess
     {
+        private readonly HttpContextAccessor _httpContextAccessor;
+        private readonly ILogger<JwtTokenProcess> _logger;
+
+        public JwtTokenProcess(HttpContextAccessor httpContextAccessor, ILogger<JwtTokenProcess> logger)
+        {
+            _httpContextAccessor = httpContextAccessor;
+            _logger = logger;
+        }
+
+        public string GetPhoneNumberFromJwtToken()
+        {
+            try
+            {
+                IHeaderDictionary requestHeaders = _httpContextAccessor.HttpContext?.Request.Headers;
+                if (requestHeaders != null && requestHeaders.TryGetValue("Authorization", out var authHeaderValue))
+                {
+                    string jwtToken = authHeaderValue.ToString().Replace("Bearer ", string.Empty);
+                    if (!string.IsNullOrEmpty(jwtToken))
+                    {
+                        JwtSecurityTokenHandler jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+                        JwtSecurityToken jwtSecurityToken = jwtSecurityTokenHandler.ReadJwtToken(jwtToken);
+                        Claim? phoneNumberClaim = jwtSecurityToken?.Claims.FirstOrDefault(claim => claim.Type == "PhoneNumber");
+                        if (phoneNumberClaim != null)
+                        {
+                            _logger.LogInformation($"Полученный номер телефона: {phoneNumberClaim.Value}");
+
+                            return phoneNumberClaim.Value;
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Не удалось прочитать номер телефона из токена");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Токен либо отсутствует, либо имеет неверный формат");
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("HttpContext или заголовки запроса недоступны");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при извлечении номера телефона из JWT токена");
+            }
+            return string.Empty;
+        }
     }
 }
