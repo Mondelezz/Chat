@@ -44,3 +44,11 @@ D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\Microsoft.Extensions.DependencyModel
 D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\Mono.TextTemplating.dll
 D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\System.CodeDom.dll
 D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\BCrypt.Net.dll
+D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\Microsoft.IdentityModel.Abstractions.dll
+D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\Microsoft.IdentityModel.JsonWebTokens.dll
+D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\Microsoft.IdentityModel.Logging.dll
+D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\Microsoft.IdentityModel.Tokens.dll
+D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\System.IdentityModel.Tokens.Jwt.dll
+D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\Microsoft.IdentityModel.Protocols.dll
+D:\СSharp\Quantum\Quantum\bin\Debug\net7.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll

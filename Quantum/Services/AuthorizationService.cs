@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Quantum.Data;
 using Quantum.Interfaces;
 using Quantum.Models;
@@ -11,51 +12,66 @@ namespace Quantum.Services
     public class AuthorizationService : IAuthorization
     {
         private readonly DataContext _dataContext;
-        private readonly IMapper _mapper;
-        private readonly ILogger _logger;
-        public AuthorizationService(DataContext dataContext, IMapper mapper, ILogger logger)
+        private readonly ILogger<AuthorizationService> _logger;
+        public AuthorizationService(DataContext dataContext, ILogger<AuthorizationService> logger)
         {
             _dataContext = dataContext;
-            _mapper = mapper;
-            _logger = logger;   
+            _logger = logger;
         }
 
-        public string AuthenticateUser(AuthorizationUserDTO authorizationUserDTO)
+        public async Task<string> AuthenticateUser(AuthorizationUserDTO authorizationUserDTO)
         {
             try
             {
-                User? user = _dataContext.Users.FirstOrDefault(pN => pN.PhoneNumber == authorizationUserDTO.PhoneNumber);
+                User? user = await _dataContext.Users.FirstOrDefaultAsync(pN => pN.PhoneNumber == authorizationUserDTO.PhoneNumber);
                 if (user == null)
                 {
-                    _logger.Log(LogLevel.Warning, "Пользователь не найден");
+                    _logger.Log(LogLevel.Error, "Пользователь не найден");
 
                     throw new Exception("Пользователь не найден");
                 }
                 else
                 {
-                    bool validatePassword = BCryptNet.Verify(authorizationUserDTO.Password, user.HashPassword);
-                    if (validatePassword)
-                    {
-                        ClaimsIdentity identity = new ClaimsIdentity(new[]
-                        {
-                            new Claim(ClaimsIdentity.DefaultNameClaimType, authorizationUserDTO.Password),
-                            new Claim(ClaimsIdentity.DefaultNameClaimType, authorizationUserDTO.PhoneNumber),
-                            new Claim("Id", user.UserId.ToString())
-                        });
-                        DateTime now = DateTime.UtcNow;
-                        JwtSecurityToken jwt
-                    }
+                    return GetJwtToken(user, authorizationUserDTO);
                 }
-                
-            }
-            catch (Exception)
-            {
 
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Error, $"Исключение при поиске пользователя в базе данных по номеру телефона: {ex.Message}");
                 throw;
             }
 
-            
+
         }
-        public string CreateJwtToken()
+        private string GetJwtToken(User user, AuthorizationUserDTO authorizationUserDTO)
+        {
+            bool validatePassword = BCryptNet.Verify(authorizationUserDTO.Password, user.HashPassword);
+            if (validatePassword)
+            {
+                ClaimsIdentity identity = new ClaimsIdentity(new[]
+                {
+                     new Claim(ClaimsIdentity.DefaultNameClaimType, user.UserName),
+                     new Claim(ClaimsIdentity.DefaultNameClaimType, user.PhoneNumber),
+                     new Claim("Id", user.UserId.ToString())
+                });
+                DateTime now = DateTime.UtcNow;
+                JwtSecurityToken jwt = new JwtSecurityToken(
+                    issuer: JwtOptions.ISSUER,
+                    audience: JwtOptions.AUDIENCE,
+                    notBefore: now,
+                    claims: identity.Claims,
+                    expires: now.Add(TimeSpan.FromMinutes(JwtOptions.KEYLIFE)),
+                    signingCredentials: new SigningCredentials(JwtOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
+                string encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
+
+                return encodedJwt;
+            }
+            else
+            {
+                _logger.Log(LogLevel.Error, "Пользователь не найден. Неверный логин или пароль!");
+                throw new Exception("Пользователь не найден. Неверный логин или пароль!");                
+            }
+        }
     }
 }
