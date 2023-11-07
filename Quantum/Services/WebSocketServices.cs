@@ -8,59 +8,19 @@ using System.Text;
 
 namespace Quantum.Services
 {
-    public class WebSocketServices : IWebSocket, IJwtTokenService
+    public class WebSocketServices : IWebSocket
     {
         private readonly ILogger<WebSocketServices> _logger;
+        private readonly IJwtTokenProcess _jwtTokenProcess;
         private static readonly ReaderWriterLockSlim Locker = new ReaderWriterLockSlim();
         private static readonly List<WebSocket> Clients = new List<WebSocket>();
-        private readonly HttpContextAccessor _httpContextAccessor;
-        public WebSocketServices(ILogger<WebSocketServices> logger, HttpContextAccessor httpContextAccessor)
+        
+
+        public WebSocketServices(ILogger<WebSocketServices> logger, HttpContextAccessor httpContextAccessor, IJwtTokenProcess jwtTokenProcess)
         {
             _logger = logger;
-            _httpContextAccessor = httpContextAccessor;
-        }
-
-        public string GetPhoneNumberFromJwtToken()
-        {
-            try
-            {
-                IHeaderDictionary requestHeaders = _httpContextAccessor.HttpContext?.Request.Headers;
-                if (requestHeaders != null && requestHeaders.TryGetValue("Authorization", out var authHeaderValue))
-                {
-                    string jwtToken = authHeaderValue.ToString().Replace("Bearer ", string.Empty);
-                    if (!string.IsNullOrEmpty(jwtToken))
-                    {
-                        JwtSecurityTokenHandler jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
-                        JwtSecurityToken jwtSecurityToken = jwtSecurityTokenHandler.ReadJwtToken(jwtToken);
-                        Claim? phoneNumberClaim = jwtSecurityToken?.Claims.FirstOrDefault(claim => claim.Type == "PhoneNumber");
-                        if (phoneNumberClaim != null)
-                        {
-                            _logger.LogInformation($"Полученный номер телефона: {phoneNumberClaim.Value}");
-
-                            return phoneNumberClaim.Value;
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Не удалось прочитать номер телефона из токена");
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Токен либо отсутствует, либо имеет неверный формат");
-                    }
-                }
-                else
-                {
-                    _logger.LogWarning("HttpContext или заголовки запроса недоступны");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при извлечении номера телефона из JWT токена");
-            }
-            return string.Empty;
-        }
-
+            _jwtTokenProcess = jwtTokenProcess;
+        }      
 
         /// <summary>
         /// Добавление клиентов
@@ -168,7 +128,7 @@ namespace Quantum.Services
                         Locker.EnterWriteLock();
                         try
                         {
-
+                            string phoneNumber = _jwtTokenProcess.GetPhoneNumberFromJwtToken(); 
                         }
                         catch (Exception)
                         {
