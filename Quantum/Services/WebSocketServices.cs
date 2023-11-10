@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.IdentityModel.Tokens;
 using Quantum.Interfaces;
-using System.IdentityModel.Tokens.Jwt;
 using System.Net.WebSockets;
-using System.Security.Claims;
 using System.Text;
 
 namespace Quantum.Services
@@ -13,26 +10,35 @@ namespace Quantum.Services
         private readonly ILogger<WebSocketServices> _logger;
         private readonly IJwtTokenProcess _jwtTokenProcess;
         private static readonly ReaderWriterLockSlim Locker = new ReaderWriterLockSlim();
-        private static readonly List<WebSocket> Clients = new List<WebSocket>();
-        
+        private readonly Dictionary<string, List<WebSocket>> PhoneToWebSockets = new Dictionary<string, List<WebSocket>>();
 
-        public WebSocketServices(ILogger<WebSocketServices> logger, HttpContextAccessor httpContextAccessor, IJwtTokenProcess jwtTokenProcess)
+        public WebSocketServices(ILogger<WebSocketServices> logger, IJwtTokenProcess jwtTokenProcess)
         {
             _logger = logger;
             _jwtTokenProcess = jwtTokenProcess;
-        }      
+        }
 
         /// <summary>
-        /// Добавление клиентов
+        /// Метод обеспечивает связывание WebSocket-соединений с конкретными
+        /// пользователями по их номерам телефонов. Если это первое соединение пользователя, 
+        /// создается новый список для хранения всех его соединений. Последующие соединения 
+        /// добавляются в список пользователя в соответствии с его номером телефона
         /// </summary>
         /// <param name="webSocket"></param>
-        private void AddWebSocketToClient(WebSocket webSocket)
+        public void AddWebSocketToClient(WebSocket webSocket)
         {
             Locker.EnterWriteLock();
             try
             {
+                string phoneNumber = _jwtTokenProcess.GetPhoneNumberFromJwtToken();
+                if (!PhoneToWebSockets.ContainsKey(phoneNumber))
+                {
+                    // Если первое соединение - создаем список для хранения веб-сокет соединений.
+                    PhoneToWebSockets[phoneNumber] = new List<WebSocket>();
+                }
+                // Добавляем новое соединение WebSocket к списку соединений пользователя
+                PhoneToWebSockets[phoneNumber].Add(webSocket);
                 // Добавляем сокет клиента в список клиентов
-                Clients.Add(webSocket);
             }
             finally
             {
@@ -40,114 +46,38 @@ namespace Quantum.Services
                 Locker.ExitWriteLock();
             }
         }
-
-        /// <summary>
-        /// Удаление клиентов
-        /// </summary>
-        /// <param name="webSocket"></param>
-        private void RemoveWebSocketFromClients(WebSocket webSocket)
-        {
-            Locker.EnterWriteLock();
-            try
-            {
-                Clients.Remove(webSocket);
-            }
-            finally
-            {
-                Locker.ExitWriteLock();
-            }
-        }
-
-        /// <summary>
-        /// Управленние веб-сокет соединениями
-        /// </summary>
-        public async Task HandleWebSocketRequestAsync(WebSocket webSocket)
-        {
-            AddWebSocketToClient(webSocket);           
-            try
-            {
-                while (webSocket.State == WebSocketState.Open)
-                {
-                    ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
-                    /// <summary>
-                    /// result содержит информацию чтения данных из веб-сокета.
-                    /// </summary>
-                    WebSocketReceiveResult result = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
-                    if (result.MessageType == WebSocketMessageType.Text && result.EndOfMessage)
-                    {
-                        byte[] receivedBytes = buffers.Skip(buffers.Offset).Take(result.Count).ToArray();
-
-                        await BroadcastMessageAsync(receivedBytes);
-                    }                  
-                }
-            }           
-            catch (Exception ex)
-            {
-                _logger.Log(LogLevel.Error, $"Исключение: {ex.Message}");
-                RemoveWebSocketFromClients(webSocket);
-            }
-        } 
         
-        private async Task BroadcastMessageAsync(byte[] message)
+        public async Task SendMessageToUser(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes)
         {
-            Locker.EnterWriteLock();
             try
             {
-                // Отправить сообщение всем подключенным клиентам
-                foreach (var client in Clients)
+                if (PhoneToWebSockets.ContainsKey(receiverPhoneNumber))
                 {
-                    if (client.State == WebSocketState.Open)
+                    List<WebSocket> userWebSockets = PhoneToWebSockets[receiverPhoneNumber];
+
+                    foreach (var userWebSocket in userWebSockets)
                     {
-                        ArraySegment<byte> buffer = new ArraySegment<byte>(message);
-                        await client.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
-                        _logger.Log(LogLevel.Information, "Сообщение было отправлено клиенту");
-                    }
-                }
-            }
-            finally
-            {
-                Locker.ExitWriteLock();
-            }
-        }
-        [Authorize(AuthenticationSchemes = "Bearer")]
-        public async Task SendWebSocketmessageToUser(WebSocket webSocket)
-        {
-            AddWebSocketToClient(webSocket);
-            try
-            {
-                while (webSocket.State == WebSocketState.Open)
-                {
-                    ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
-
-                    WebSocketReceiveResult result = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
-
-                    if (result.MessageType == WebSocketMessageType.Text && result.EndOfMessage)
-                    {
-                        byte[] resceivedBytes = buffers.Skip(buffers.Offset).Take(result.Count).ToArray();
-
-                        Locker.EnterWriteLock();
-                        try
+                        if (userWebSocket.State == WebSocketState.Open)
                         {
-                            string phoneNumber = _jwtTokenProcess.GetPhoneNumberFromJwtToken(); 
+                            await userWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);
                         }
-                        catch (Exception)
+                        else
                         {
-
-                            throw;
+                            _logger.Log(LogLevel.Warning, "Соединение веб-сокет отсутствует");
                         }
                     }
-                    
                 }
-            }
+                else
+                {
+                    _logger.Log(LogLevel.Warning, "Пользователь не в сети");
+                }
+            }          
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Warning, $"Исключение: {ex.Message}");
-                RemoveWebSocketFromClients(webSocket);
+                _logger.Log(LogLevel.Error, $"Ошибка отправки сообщения от пользователя по номеру телефона {senderPhoneNumber} пользователю по номеру телефона {receiverPhoneNumber}: {ex.Message}");
             }
 
         }
-
-
         /// <summary>
         /// Метод Эхо.
         /// </summary>
@@ -193,5 +123,57 @@ namespace Quantum.Services
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
 
         }
+
+        /// <summary>
+        /// Управленние веб-сокет соединениями
+        /// </summary>
+        //public async Task HandleWebSocketRequestAsync(WebSocket webSocket)
+        //{
+        //    AddWebSocketToClient(webSocket);           
+        //    try
+        //    {
+        //        while (webSocket.State == WebSocketState.Open)
+        //        {
+        //            ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
+        //            /// <summary>
+        //            /// result содержит информацию чтения данных из веб-сокета.
+        //            /// </summary>
+        //            WebSocketReceiveResult result = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
+        //            if (result.MessageType == WebSocketMessageType.Text && result.EndOfMessage)
+        //            {
+        //                byte[] receivedBytes = buffers.Skip(buffers.Offset).Take(result.Count).ToArray();
+
+        //                await BroadcastMessageAsync(receivedBytes);
+        //            }                  
+        //        }
+        //    }           
+        //    catch (Exception ex)
+        //    {
+        //        _logger.Log(LogLevel.Error, $"Исключение: {ex.Message}");
+        //        RemoveWebSocketFromClients(webSocket);
+        //    }
+        //} 
+
+        //private async Task BroadcastMessageAsync(byte[] message)
+        //{
+        //    Locker.EnterWriteLock();
+        //    try
+        //    {
+        //        // Отправить сообщение всем подключенным клиентам
+        //        foreach (var client in Clients)
+        //        {
+        //            if (client.State == WebSocketState.Open)
+        //            {
+        //                ArraySegment<byte> buffer = new ArraySegment<byte>(message);
+        //                await client.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+        //                _logger.Log(LogLevel.Information, "Сообщение было отправлено клиенту");
+        //            }
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        Locker.ExitWriteLock();
+        //    }
+        //}
     }
 }

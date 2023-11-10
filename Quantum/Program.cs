@@ -19,7 +19,10 @@ builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddAutoMapper(typeof(AppMappingProfile));
 builder.Services.AddScoped<IWebSocket, WebSocketServices>();
 builder.Services.AddScoped<IUserHub, UserHubService>();
+builder.Services.AddScoped<IJwtTokenProcess, JwtTokenProcess>();
 builder.Services.AddScoped<IAuthorization, AuthorizationService>();
+builder.Services.AddScoped<HttpContextAccessor>();
+builder.Services.AddScoped<JwtTokenProcess>();
 builder.Services.AddDbContext<DataContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
