@@ -7,7 +7,7 @@ namespace Quantum.Services
     {
         public const string AUDIENCE = "MyClient";
         public const string ISSUER = "MyApp";
-        public const string KEY = "bd1a1ccf8095037f361a4d351e7c0de65f0776bfc2f478ea8d312c763bb6caca";
+        public const string KEY = "TEPERVCEBUDETNORTEPERVCEBUDETNORLOL";
         public const int KEYLIFE = 1000;
         public static SymmetricSecurityKey GetSymmetricSecurityKey()
         {

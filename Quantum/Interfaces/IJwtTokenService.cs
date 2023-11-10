@@ -2,6 +2,6 @@
 {
     public interface IJwtTokenProcess
     {
-        public string GetPhoneNumberFromJwtToken();
+        public string GetPhoneNumberFromJwtToken(string authHeaderValue);
     }
 }

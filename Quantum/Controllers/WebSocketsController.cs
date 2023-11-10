@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Quantum.Interfaces;
 using Quantum.Models.DTO;
 using Quantum.Services;
@@ -30,10 +31,31 @@ namespace Quantum.Controllers
         {
             try
             {
+                var token = HttpContext.Request.Headers["Authorization"];
+                if (token.IsNullOrEmpty())
+                {
+                    _logger.Log(LogLevel.Warning, "Заголовок отсутствует");
+                    return BadRequest("HttpContext заголовка не был получен.");
+                }
+
                 WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                string senderPhoneNumber = _jwtTokenProcess.GetPhoneNumberFromJwtToken();
-                _webSocket.AddWebSocketToClient(webSocket);
+                string senderPhoneNumber = _jwtTokenProcess.GetPhoneNumberFromJwtToken(token);
+                if (senderPhoneNumber.IsNullOrEmpty())
+                {
+                    _logger.Log(LogLevel.Warning, "Номер телефона отсутствует.");
+                    return BadRequest("Номер телефона не был получен.");
+                }
+                _logger.Log(LogLevel.Warning, $"Номер телефона отправителя: {senderPhoneNumber}");
+
+
+                _webSocket.AddWebSocketToClient(webSocket, senderPhoneNumber);
                 string receiverPhoneNumber = HttpContext.Request.Query["receiverPhoneNumber"];
+                if (receiverPhoneNumber.IsNullOrEmpty())
+                {
+                    _logger.Log(LogLevel.Warning, "Номер телефона получателя отсутствует.");
+                    return BadRequest("Номер телефона получателя не был получен.");
+                }
+                _logger.Log(LogLevel.Warning, $"Номер телефона получателя: {receiverPhoneNumber}");
                 try
                 {
                     while (webSocket.State == WebSocketState.Open)

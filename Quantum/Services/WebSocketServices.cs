@@ -25,12 +25,12 @@ namespace Quantum.Services
         /// добавляются в список пользователя в соответствии с его номером телефона
         /// </summary>
         /// <param name="webSocket"></param>
-        public void AddWebSocketToClient(WebSocket webSocket)
+        public void AddWebSocketToClient(WebSocket webSocket, string senderPhoneNumber)
         {
             Locker.EnterWriteLock();
             try
             {
-                string phoneNumber = _jwtTokenProcess.GetPhoneNumberFromJwtToken();
+                string phoneNumber = senderPhoneNumber;
                 if (!PhoneToWebSockets.ContainsKey(phoneNumber))
                 {
                     // Если первое соединение - создаем список для хранения веб-сокет соединений.
@@ -40,6 +40,7 @@ namespace Quantum.Services
                 PhoneToWebSockets[phoneNumber].Add(webSocket);
                 // Добавляем сокет клиента в список клиентов
             }
+          
             finally
             {
                 // Гарантируется, что вызываемый объект выходит из режима записи
