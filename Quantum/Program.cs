@@ -17,7 +17,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddAutoMapper(typeof(AppMappingProfile));
-builder.Services.AddScoped<IWebSocket, WebSocketServices>();
+builder.Services.AddSingleton<IWebSocket, WebSocketServices>();
 builder.Services.AddScoped<IUserHub, UserHubService>();
 builder.Services.AddScoped<IJwtTokenProcess, JwtTokenProcess>();
 builder.Services.AddScoped<IAuthorization, AuthorizationService>();

@@ -8,14 +8,12 @@ namespace Quantum.Services
     public class WebSocketServices : IWebSocket
     {
         private readonly ILogger<WebSocketServices> _logger;
-        private readonly IJwtTokenProcess _jwtTokenProcess;
         private static readonly ReaderWriterLockSlim Locker = new ReaderWriterLockSlim();
         private readonly Dictionary<string, List<WebSocket>> PhoneToWebSockets = new Dictionary<string, List<WebSocket>>();
 
-        public WebSocketServices(ILogger<WebSocketServices> logger, IJwtTokenProcess jwtTokenProcess)
+        public WebSocketServices(ILogger<WebSocketServices> logger)
         {
             _logger = logger;
-            _jwtTokenProcess = jwtTokenProcess;
         }
 
         /// <summary>
@@ -31,14 +29,18 @@ namespace Quantum.Services
             try
             {
                 string phoneNumber = senderPhoneNumber;
+                _logger.LogInformation($"Добавление веб-сокета для номера телефона: {phoneNumber}");
                 if (!PhoneToWebSockets.ContainsKey(phoneNumber))
                 {
+                    _logger.LogInformation($"Создание нового списка для телефонного номера: {phoneNumber}");
+
                     // Если первое соединение - создаем список для хранения веб-сокет соединений.
-                    PhoneToWebSockets[phoneNumber] = new List<WebSocket>();
+                    PhoneToWebSockets[phoneNumber] = new List<WebSocket>();                   
                 }
                 // Добавляем новое соединение WebSocket к списку соединений пользователя
                 PhoneToWebSockets[phoneNumber].Add(webSocket);
-                // Добавляем сокет клиента в список клиентов
+                
+                _logger.LogInformation($"Добавлен веб-сокет для номера телефона: {phoneNumber}");
             }
           
             finally

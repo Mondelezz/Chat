@@ -17,6 +17,7 @@ namespace Quantum.Controllers
         private readonly IWebSocket _webSocket;
         private readonly ILogger<WebSocketsController> _logger;
         private readonly JwtTokenProcess _jwtTokenProcess;
+
         public WebSocketsController(ILogger<WebSocketsController> logger, IWebSocket webSocket, JwtTokenProcess jwtTokenProcess)
         {
             _logger = logger;
@@ -31,6 +32,8 @@ namespace Quantum.Controllers
         {
             try
             {
+
+                // Токен из заголовка запроса
                 var token = HttpContext.Request.Headers["Authorization"];
                 if (token.IsNullOrEmpty())
                 {
@@ -39,23 +42,28 @@ namespace Quantum.Controllers
                 }
 
                 WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+
+                // Отправитель
                 string senderPhoneNumber = _jwtTokenProcess.GetPhoneNumberFromJwtToken(token);
                 if (senderPhoneNumber.IsNullOrEmpty())
                 {
-                    _logger.Log(LogLevel.Warning, "Номер телефона отсутствует.");
-                    return BadRequest("Номер телефона не был получен.");
+                    _logger.Log(LogLevel.Warning, "Номер телефона отправителя отсутствует.");
+                    return BadRequest("Номер телефона отправителя не был получен.");
                 }
-                _logger.Log(LogLevel.Warning, $"Номер телефона отправителя: {senderPhoneNumber}");
-
-
+                _logger.Log(LogLevel.Information, $"Номер телефона отправителя: {senderPhoneNumber}");
                 _webSocket.AddWebSocketToClient(webSocket, senderPhoneNumber);
+
+
+                // Получатель
                 string receiverPhoneNumber = HttpContext.Request.Query["receiverPhoneNumber"];
                 if (receiverPhoneNumber.IsNullOrEmpty())
                 {
                     _logger.Log(LogLevel.Warning, "Номер телефона получателя отсутствует.");
                     return BadRequest("Номер телефона получателя не был получен.");
                 }
-                _logger.Log(LogLevel.Warning, $"Номер телефона получателя: {receiverPhoneNumber}");
+                _logger.Log(LogLevel.Information, $"Номер телефона получателя: {receiverPhoneNumber}");
+
+                // Осуществляю отправку сообщения
                 try
                 {
                     while (webSocket.State == WebSocketState.Open)
@@ -66,12 +74,12 @@ namespace Quantum.Controllers
                         {
                             byte[] receivedBuffers = buffers.Skip(buffers.Offset).Take(result.Count).ToArray();
                             await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers);
-                        }
+                            _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.{Encoding.UTF8.GetString(receivedBuffers)}");
+                        }                      
                     }
                 }
                 catch (Exception)
                 {
-
                     throw;
                 }
 
