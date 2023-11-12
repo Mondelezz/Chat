@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using Quantum.Interfaces;
+using Quantum.Interfaces.WebSocketInterface;
 using Quantum.Models.DTO;
 using Quantum.Services;
 using System.Net.WebSockets;
@@ -15,14 +15,16 @@ namespace Quantum.Controllers
     public class WebSocketsController : ControllerBase
     {
         private readonly IWebSocket _webSocket;
+        private readonly IWebSocketToClient _webSocketToClient;
         private readonly ILogger<WebSocketsController> _logger;
         private readonly JwtTokenProcess _jwtTokenProcess;
 
-        public WebSocketsController(ILogger<WebSocketsController> logger, IWebSocket webSocket, JwtTokenProcess jwtTokenProcess)
+        public WebSocketsController(ILogger<WebSocketsController> logger, IWebSocket webSocket, JwtTokenProcess jwtTokenProcess, IWebSocketToClient webSocketToClient)
         {
             _logger = logger;
             _webSocket = webSocket;
             _jwtTokenProcess = jwtTokenProcess;
+            _webSocketToClient = webSocketToClient;
         }
 
        
@@ -51,8 +53,8 @@ namespace Quantum.Controllers
                     return BadRequest("Номер телефона отправителя не был получен.");
                 }
                 _logger.Log(LogLevel.Information, $"Номер телефона отправителя: {senderPhoneNumber}");
-                _webSocket.AddWebSocketToClient(webSocket, senderPhoneNumber);
 
+                Dictionary<string, List<WebSocket>> phoneToWebSockets = _webSocketToClient.AddWebSocketToClient(webSocket, senderPhoneNumber);
 
                 // Получатель
                 string receiverPhoneNumber = HttpContext.Request.Query["receiverPhoneNumber"];
@@ -73,7 +75,7 @@ namespace Quantum.Controllers
                         if (result.MessageType == WebSocketMessageType.Text && result.EndOfMessage)
                         {
                             byte[] receivedBuffers = buffers.Skip(buffers.Offset).Take(result.Count).ToArray();
-                            await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers);
+                            await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
                             _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.{Encoding.UTF8.GetString(receivedBuffers)}");
                         }                      
                     }
@@ -91,30 +93,6 @@ namespace Quantum.Controllers
                 return StatusCode(500, "Ошибка");
             }
         }
-
-
-
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        //[HttpGet("message/get")]
-        //public async Task GetWebSocketAsync()
-        //{
-        //    /// <summary>
-        //    ///  Если HttpContext запрос это WebSocket запрос.
-        //    /// </summary>
-        //    if (HttpContext.WebSockets.IsWebSocketRequest)
-        //    {
-        //        /// <summary>
-        //        /// Ожидание установления WebSocket - соединения.
-        //        /// </summary>
-        //        using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-        //        _logger.Log(LogLevel.Information, "Установлено соединение через WebSocket");
-        //        await _webSocket.HandleWebSocketRequestAsync(webSocket);
-        //    }
-        //    else
-        //    {
-        //        HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-        //    }
-        //}
-        //
+        
     }
 }

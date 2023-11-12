@@ -1,62 +1,26 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Quantum.Interfaces;
+﻿using Quantum.Interfaces.WebSocketInterface;
 using System.Net.WebSockets;
 using System.Text;
 
-namespace Quantum.Services
+namespace Quantum.Services.WebSocketServices
 {
     public class WebSocketServices : IWebSocket
     {
-        private readonly ILogger<WebSocketServices> _logger;
-        private static readonly ReaderWriterLockSlim Locker = new ReaderWriterLockSlim();
-        private readonly Dictionary<string, List<WebSocket>> PhoneToWebSockets = new Dictionary<string, List<WebSocket>>();
+        private readonly ILogger<WebSocketServices> _logger;    
 
         public WebSocketServices(ILogger<WebSocketServices> logger)
         {
             _logger = logger;
-        }
+        }       
 
-        /// <summary>
-        /// Метод обеспечивает связывание WebSocket-соединений с конкретными
-        /// пользователями по их номерам телефонов. Если это первое соединение пользователя, 
-        /// создается новый список для хранения всех его соединений. Последующие соединения 
-        /// добавляются в список пользователя в соответствии с его номером телефона
-        /// </summary>
-        /// <param name="webSocket"></param>
-        public void AddWebSocketToClient(WebSocket webSocket, string senderPhoneNumber)
+        public async Task SendMessageToUser(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
-            Locker.EnterWriteLock();
+            
             try
             {
-                string phoneNumber = senderPhoneNumber;
-                _logger.LogInformation($"Добавление веб-сокета для номера телефона: {phoneNumber}");
-                if (!PhoneToWebSockets.ContainsKey(phoneNumber))
+                if (phoneToWebSockets.ContainsKey(receiverPhoneNumber))
                 {
-                    _logger.LogInformation($"Создание нового списка для телефонного номера: {phoneNumber}");
-
-                    // Если первое соединение - создаем список для хранения веб-сокет соединений.
-                    PhoneToWebSockets[phoneNumber] = new List<WebSocket>();                   
-                }
-                // Добавляем новое соединение WebSocket к списку соединений пользователя
-                PhoneToWebSockets[phoneNumber].Add(webSocket);
-                
-                _logger.LogInformation($"Добавлен веб-сокет для номера телефона: {phoneNumber}");
-            }
-          
-            finally
-            {
-                // Гарантируется, что вызываемый объект выходит из режима записи
-                Locker.ExitWriteLock();
-            }
-        }
-        
-        public async Task SendMessageToUser(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes)
-        {
-            try
-            {
-                if (PhoneToWebSockets.ContainsKey(receiverPhoneNumber))
-                {
-                    List<WebSocket> userWebSockets = PhoneToWebSockets[receiverPhoneNumber];
+                    List<WebSocket> userWebSockets = phoneToWebSockets[receiverPhoneNumber];
 
                     foreach (var userWebSocket in userWebSockets)
                     {
@@ -74,7 +38,7 @@ namespace Quantum.Services
                 {
                     _logger.Log(LogLevel.Warning, "Пользователь не в сети");
                 }
-            }          
+            }
             catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, $"Ошибка отправки сообщения от пользователя по номеру телефона {senderPhoneNumber} пользователю по номеру телефона {receiverPhoneNumber}: {ex.Message}");

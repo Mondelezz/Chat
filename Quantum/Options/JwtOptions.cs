@@ -1,7 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace Quantum.Services
+namespace Quantum.Options
 {
     public class JwtOptions
     {

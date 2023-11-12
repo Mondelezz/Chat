@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Quantum.Options;
+using Quantum.Services.WebSocketServices;
+using Quantum.Interfaces.WebSocketInterface;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +20,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddAutoMapper(typeof(AppMappingProfile));
-builder.Services.AddSingleton<IWebSocket, WebSocketServices>();
+builder.Services.AddSingleton<IWebSocketToClient, PhoneToSocketConnectionService>();
+builder.Services.AddScoped<IWebSocket, WebSocketServices>();
 builder.Services.AddScoped<IUserHub, UserHubService>();
 builder.Services.AddScoped<IJwtTokenProcess, JwtTokenProcess>();
 builder.Services.AddScoped<IAuthorization, AuthorizationService>();

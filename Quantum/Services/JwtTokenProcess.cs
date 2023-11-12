@@ -6,12 +6,10 @@ namespace Quantum.Services
 {
     public class JwtTokenProcess : IJwtTokenProcess
     {
-        private readonly HttpContextAccessor _httpContextAccessor;
         private readonly ILogger<JwtTokenProcess> _logger;
 
-        public JwtTokenProcess(HttpContextAccessor httpContextAccessor, ILogger<JwtTokenProcess> logger)
+        public JwtTokenProcess(ILogger<JwtTokenProcess> logger)
         {
-            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
         }
 
