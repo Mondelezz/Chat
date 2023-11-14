@@ -45,6 +45,43 @@ namespace Quantum.Services.WebSocketServices
             }
 
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         /// <summary>
         /// Метод Эхо.
         /// </summary>

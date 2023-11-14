@@ -48,6 +48,6 @@ namespace Quantum.Services.WebSocketServices
                 // Гарантируется, что вызываемый объект выходит из режима записи
                 Locker.ExitWriteLock();
             }
-        }
+        }       
     }
 }
