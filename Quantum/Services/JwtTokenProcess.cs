@@ -12,8 +12,7 @@ namespace Quantum.Services
         {
             _logger = logger;
         }
-
-        public string GetPhoneNumberFromJwtToken(string authHeaderValue)
+        private JwtSecurityToken GetJwtToken(string authHeaderValue)
         {
             try
             {
@@ -22,28 +21,53 @@ namespace Quantum.Services
                 {
                     JwtSecurityTokenHandler jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
                     JwtSecurityToken jwtSecurityToken = jwtSecurityTokenHandler.ReadJwtToken(jwtToken);
-                    Claim? phoneNumberClaim = jwtSecurityToken?.Claims.FirstOrDefault(claim => claim.Type == "PhoneNumber");
-                    if (phoneNumberClaim != null)
-                    {
-                        _logger.LogInformation($"Полученный номер телефона: {phoneNumberClaim.Value}");
-
-                        return phoneNumberClaim.Value;
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Не удалось прочитать номер телефона из токена");
-                    }
+                    return jwtSecurityToken;
                 }
                 else
                 {
                     _logger.LogWarning("Токен либо отсутствует, либо имеет неверный формат");
+                    throw new Exception("Токен либо отсутствует, либо имеет неверный формат");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при извлечении номера телефона из JWT токена");
+                _logger.LogError($"Ошибка при извлечении номера телефона из JWT токена {ex.Message}");
+                throw;
             }
-            return string.Empty;
+        }
+        public string GetPhoneNumberFromJwtToken(string authHeaderValue)
+        {
+            JwtSecurityToken jwtSecurityToken = GetJwtToken(authHeaderValue);
+            Claim? phoneNumberClaim = jwtSecurityToken?.Claims.First(claim => claim.Type == "PhoneNumber");
+            if (phoneNumberClaim != null)
+            {
+                _logger.LogInformation($"Полученный номер телефона: {phoneNumberClaim.Value}");
+
+                return phoneNumberClaim.Value;
+            }
+            else
+            {
+                _logger.LogWarning("Не удалось прочитать номер телефона из токена");
+                return string.Empty;
+            }
+        }
+
+        public Guid GetUserIdFromJwtToken(string authHeaderValue)
+        {            
+            JwtSecurityToken jwtSecurityToken = GetJwtToken(authHeaderValue);
+            Claim? userIdClaim = jwtSecurityToken.Claims.First(claim => claim.Type == "Id");
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
+            {
+                _logger.LogInformation($"Полученный userId: {userId}");
+
+                return userId;
+            }
+            else
+            {
+                _logger.LogWarning("Не удалось прочитать номер телефона из токена");
+
+                return Guid.Empty;
+            }
         }
     }
 }
