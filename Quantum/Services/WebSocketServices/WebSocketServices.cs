@@ -28,10 +28,6 @@ namespace Quantum.Services.WebSocketServices
                         {
                             await userWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);
                             
-                            // Логика, если номер изменен
-
-
-
                         }
                         else
                         {

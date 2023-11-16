@@ -58,7 +58,15 @@ namespace Quantum.Services.WebSocketServices
                 {
                     await webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, webSocket.CloseStatusDescription, CancellationToken.None);
                     _logger.Log(LogLevel.Information, $"Соединение по номеру: {phoneNumber} закрыто.");
-                    PhoneToWebSockets[phoneNumber].Remove(webSocket);
+          
+                    foreach (string item in PhoneToWebSockets.Keys.ToList())
+                    {
+                        if (item.Equals(phoneNumber))
+                        {
+                            PhoneToWebSockets.Remove(item);
+                        }
+                    }
+                    _logger.Log(LogLevel.Information, "Соединение удалено из словаря.");
                 }
                 else
                 {
