@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Server.IIS.Core;
-using Microsoft.IdentityModel.Tokens;
+using Quantum.Interfaces.UserInterface;
 using Quantum.Interfaces.WebSocketInterface;
 using Quantum.Services;
 using System.Net.WebSockets;
@@ -18,13 +17,14 @@ namespace Quantum.Controllers
         private readonly IWebSocketToClient _webSocketToClient;
         private readonly ILogger<WebSocketsController> _logger;
         private readonly JwtTokenProcess _jwtTokenProcess;
-
-        public WebSocketsController(ILogger<WebSocketsController> logger, IWebSocket webSocket, JwtTokenProcess jwtTokenProcess, IWebSocketToClient webSocketToClient)
+        private readonly ICheckingDataChange _checkingDataChange;
+        public WebSocketsController(ILogger<WebSocketsController> logger, IWebSocket webSocket, JwtTokenProcess jwtTokenProcess, IWebSocketToClient webSocketToClient, ICheckingDataChange checkingDataChange)
         {
             _logger = logger;
             _webSocket = webSocket;
             _jwtTokenProcess = jwtTokenProcess;
             _webSocketToClient = webSocketToClient;
+            _checkingDataChange = checkingDataChange;
         }
 
         // Получение токена из заголовка авторизации
@@ -97,12 +97,20 @@ namespace Quantum.Controllers
                     while (webSocket.State == WebSocketState.Open)
                     {
                         ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
-                        WebSocketReceiveResult result = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
-                        if (result.MessageType == WebSocketMessageType.Text && result.EndOfMessage)
+                        WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
+                        if (receiveResult.MessageType == WebSocketMessageType.Text && receiveResult.EndOfMessage)
                         {
-                            byte[] receivedBuffers = buffers.Skip(buffers.Offset).Take(result.Count).ToArray();
-                            await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
-                            _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.{Encoding.UTF8.GetString(receivedBuffers)}");
+                            bool result = await _checkingDataChange.CheckingDataChangeAsync(token, senderPhoneNumber);
+                            if (result)
+                            {
+                                await _webSocketToClient.CloseWebSocketConnection(webSocket, senderPhoneNumber);
+                            }
+                            else
+                            {
+                                byte[] receivedBuffers = buffers.Skip(buffers.Offset).Take(receiveResult.Count).ToArray();
+                                await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
+                                _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.{Encoding.UTF8.GetString(receivedBuffers)}");
+                            }                         
                         }                      
                     }
                 }

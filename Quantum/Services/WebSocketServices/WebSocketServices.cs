@@ -6,8 +6,8 @@ namespace Quantum.Services.WebSocketServices
 {
     public class WebSocketServices : IWebSocket
     {
-        private readonly ILogger<WebSocketServices> _logger;    
-
+        private readonly ILogger<WebSocketServices> _logger;
+        
         public WebSocketServices(ILogger<WebSocketServices> logger)
         {
             _logger = logger;
@@ -27,6 +27,11 @@ namespace Quantum.Services.WebSocketServices
                         if (userWebSocket.State == WebSocketState.Open)
                         {
                             await userWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                            
+                            // Логика, если номер изменен
+
+
+
                         }
                         else
                         {

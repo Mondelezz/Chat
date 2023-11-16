@@ -27,6 +27,7 @@ builder.Services.AddScoped<IJwtTokenProcess, JwtTokenProcess>();
 builder.Services.AddScoped<IAuthorization, AuthorizationService>();
 builder.Services.AddScoped<HttpContextAccessor>();
 builder.Services.AddScoped<JwtTokenProcess>();
+builder.Services.AddScoped<ICheckingDataChange, CheckingDataChangeService>();
 builder.Services.AddDbContext<DataContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));

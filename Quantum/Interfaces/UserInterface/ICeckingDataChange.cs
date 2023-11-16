@@ -2,6 +2,6 @@
 {
     public interface ICheckingDataChange
     {
-        public bool CheckingDataChange(string authToken);
+        public Task<bool> CheckingDataChangeAsync(string authToken, string senderPhoneNumber);
     }
 }

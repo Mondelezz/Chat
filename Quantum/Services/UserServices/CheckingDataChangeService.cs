@@ -1,4 +1,7 @@
-﻿using Quantum.Interfaces.UserInterface;
+﻿using Microsoft.EntityFrameworkCore;
+using Quantum.Data;
+using Quantum.Interfaces.UserInterface;
+using Quantum.Models;
 
 namespace Quantum.Services.UserServices
 {
@@ -6,25 +9,39 @@ namespace Quantum.Services.UserServices
     {
         private readonly JwtTokenProcess _jwtTokenProcess;
         private readonly ILogger<CheckingDataChangeService> _logger;
-        public CheckingDataChangeService(JwtTokenProcess jwtTokenProcess, ILogger<CheckingDataChangeService> logger)
+        private readonly DataContext _dataContext;
+        public CheckingDataChangeService(JwtTokenProcess jwtTokenProcess, ILogger<CheckingDataChangeService> logger , DataContext dataContext)
         {
             _jwtTokenProcess = jwtTokenProcess;
             _logger = logger;
+            _dataContext = dataContext;
         }
 
         // Допилить
-        public bool CheckingDataChange(string authToken)
+        public async Task<bool> CheckingDataChangeAsync(string authToken, string senderPhoneNumber)
         {
             try
-            {
-                string phoneNumberClaim = _jwtTokenProcess.GetPhoneNumberFromJwtToken(authToken);
+            {               
 
                 Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(authToken);
-                return true;
-            }
-            catch (Exception)
-            {
 
+                User user = await _dataContext.Users.FirstAsync(x => x.UserId == userId);
+
+                if (user != null && user.PhoneNumber == senderPhoneNumber)
+                {
+                    _logger.Log(LogLevel.Information, "Данные пользователя соответсвуют. Изменений не выявлено.");
+                    return false;
+                }
+                else
+                {
+                    _logger.Log(LogLevel.Warning, "Данные не соответствуют, либо полизователя не существует\nРазрываю веб-сокет соединение.");
+                    return true;
+                }
+                
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Error, $"Ошибка работы сервера: {ex.Message}");
                 throw;
             }
             
