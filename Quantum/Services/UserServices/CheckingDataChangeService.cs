@@ -29,19 +29,19 @@ namespace Quantum.Services.UserServices
 
                 if (user != null && user.PhoneNumber == senderPhoneNumber)
                 {
-                    _logger.Log(LogLevel.Information, "Данные пользователя соответсвуют. Изменений не выявлено.");
+                    _logger.Log(LogLevel.Information, "Данные пользователя соответствуют. Изменений не выявлено.\n");
                     return false;
                 }
                 else
                 {
-                    _logger.Log(LogLevel.Warning, "Данные не соответствуют, либо полизователя не существует\nРазрываю веб-сокет соединение.");
+                    _logger.Log(LogLevel.Warning, "Данные не соответствуют, либо пользователя не существует\nРазрываю веб-сокет соединение.\n");
                     return true;
                 }
                 
             }
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Error, $"Ошибка работы сервера: {ex.Message}");
+                _logger.Log(LogLevel.Error, $"Ошибка работы сервера: {ex.Message}\n");
                 throw;
             }
             

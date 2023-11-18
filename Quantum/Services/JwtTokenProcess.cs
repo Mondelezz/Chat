@@ -25,13 +25,13 @@ namespace Quantum.Services
                 }
                 else
                 {
-                    _logger.LogWarning("Токен либо отсутствует, либо имеет неверный формат");
-                    throw new Exception("Токен либо отсутствует, либо имеет неверный формат");
+                    _logger.LogWarning("Токен либо отсутствует, либо имеет неверный формат\n");
+                    throw new Exception("Токен либо отсутствует, либо имеет неверный формат\n");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Ошибка при извлечении номера телефона из JWT токена {ex.Message}");
+                _logger.LogError($"Ошибка при извлечении номера телефона из JWT токена {ex.Message} \n");
                 throw;
             }
         }
@@ -41,13 +41,13 @@ namespace Quantum.Services
             Claim? phoneNumberClaim = jwtSecurityToken?.Claims.First(claim => claim.Type == "PhoneNumber");
             if (phoneNumberClaim != null)
             {
-                _logger.LogInformation($"Полученный номер телефона: {phoneNumberClaim.Value}");
+                _logger.LogInformation($"Полученный номер телефона из jwtToken: {phoneNumberClaim.Value}\n");
 
                 return phoneNumberClaim.Value;
             }
             else
             {
-                _logger.LogWarning("Не удалось прочитать номер телефона из токена");
+                _logger.LogWarning("Не удалось прочитать номер телефона из токена\n");
                 return string.Empty;
             }
         }
@@ -58,13 +58,13 @@ namespace Quantum.Services
             Claim? userIdClaim = jwtSecurityToken.Claims.First(claim => claim.Type == "Id");
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
             {
-                _logger.LogInformation($"Полученный userId: {userId}");
+                _logger.LogInformation($"Полученный userId: {userId}\n");
 
                 return userId;
             }
             else
             {
-                _logger.LogWarning("Не удалось прочитать номер телефона из токена");
+                _logger.LogWarning("Не удалось прочитать userId из токена\n");
 
                 return Guid.Empty;
             }

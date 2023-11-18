@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Quantum.Data;
 using Quantum.Interfaces.UserInterface;
 using Quantum.Models;
@@ -11,11 +13,13 @@ namespace Quantum.Services.UserServices
         private readonly ILogger<UserHubService> _logger;
         private readonly DataContext _dataContext;
         private readonly IMapper _mapper;
-        public UserHubService(DataContext dataContext, IMapper mapper, ILogger<UserHubService> logger)
+        private readonly JwtTokenProcess _jwtTokenProcess;
+        public UserHubService(DataContext dataContext, IMapper mapper, ILogger<UserHubService> logger, JwtTokenProcess jwtTokenProcess)
         {
             _dataContext = dataContext;
             _mapper = mapper;
             _logger = logger;
+            _jwtTokenProcess = jwtTokenProcess;
         }
         public async Task EnterUserInformation(RegistrationUserDTO registrationUserDTO)
         {
@@ -32,6 +36,47 @@ namespace Quantum.Services.UserServices
             catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, $"Исключение при сохранении в базу данных: {ex.Message}");
+                throw;
+            }
+        }
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [Authorize]
+        public async Task<UserInfoOutput> UserUpdateInfoAsync(UpdateInfo updateInfo, string token)
+        {
+            try
+            {
+                if (updateInfo != null)
+                {
+                    Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(token);
+                    User user = _dataContext.Users.First(id => id.UserId == userId);
+                    if (user != null)
+                    {
+                        user.UserName = updateInfo.UserName;
+                        user.PhoneNumber = updateInfo.PhoneNumber;
+                        _dataContext.Users.Update(user);
+                        await _dataContext.SaveChangesAsync();
+
+                        _logger.Log(LogLevel.Information, $"Данные обновлены успешно.\n" +
+                            $"{user.UserName}, " +
+                            $"{user.PhoneNumber}\n");
+
+                        UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
+                        return userInfoOutput;
+                    }
+                    else
+                    {
+                        _logger.Log(LogLevel.Warning, $"Пользователь с {userId} не найден.");
+                        throw new Exception("Пользователь не найден.");                       
+                    }
+                }
+                else
+                {
+                    _logger.Log(LogLevel.Warning, $"Информация о пользователе не указана.{updateInfo.UserName} \t {updateInfo.PhoneNumber}");
+                    throw new Exception("Проверьте корректность введённых данных.");
+                }
+            }
+            catch (Exception)
+            {
                 throw;
             }
         }

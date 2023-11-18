@@ -27,10 +27,10 @@ namespace Quantum.Services.WebSocketServices
             try
             {
                 string phoneNumber = senderPhoneNumber;
-                _logger.LogInformation($"Добавление веб-сокета для номера телефона: {phoneNumber}");
+                _logger.LogInformation($"Добавление веб-сокета для номера телефона: {phoneNumber} \n");
                 if (!PhoneToWebSockets.ContainsKey(phoneNumber))
                 {
-                    _logger.LogInformation($"Создание нового списка для телефонного номера: {phoneNumber}");
+                    _logger.LogInformation($"Создание нового списка для телефонного номера: {phoneNumber} \n");
 
                     // Если первое соединение - создаем список для хранения веб-сокет соединений.
                     PhoneToWebSockets[phoneNumber] = new List<WebSocket>();
@@ -38,7 +38,7 @@ namespace Quantum.Services.WebSocketServices
                 // Добавляем новое соединение WebSocket к списку соединений пользователя
                 PhoneToWebSockets[phoneNumber].Add(webSocket);
 
-                _logger.LogInformation($"Добавлен веб-сокет для номера телефона: {phoneNumber}");
+                _logger.LogInformation($"Добавлен веб-сокет для номера телефона: {phoneNumber} \n");
 
                 return PhoneToWebSockets;
             }
@@ -56,8 +56,11 @@ namespace Quantum.Services.WebSocketServices
                 string phoneNumber = senderPhoneNumber;
                 if (PhoneToWebSockets.ContainsKey(phoneNumber))
                 {
-                    await webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, webSocket.CloseStatusDescription, CancellationToken.None);
-                    _logger.Log(LogLevel.Information, $"Соединение по номеру: {phoneNumber} закрыто.");
+                    await webSocket.CloseOutputAsync( closeStatus: WebSocketCloseStatus.NormalClosure,
+                        statusDescription: webSocket.CloseStatusDescription,
+                        cancellationToken: CancellationToken.None);
+
+                    _logger.Log(LogLevel.Information, $"Соединение по номеру: {phoneNumber} закрыто. \n");
           
                     foreach (string item in PhoneToWebSockets.Keys.ToList())
                     {
@@ -66,16 +69,16 @@ namespace Quantum.Services.WebSocketServices
                             PhoneToWebSockets.Remove(item);
                         }
                     }
-                    _logger.Log(LogLevel.Information, "Соединение удалено из словаря.");
+                    _logger.Log(LogLevel.Information, "Соединение удалено из словаря. \n");
                 }
                 else
                 {
-                    _logger.Log(LogLevel.Warning, $"Соединения по номеру {phoneNumber} отсутствуют.");
+                    _logger.Log(LogLevel.Warning, $"Соединения по номеру {phoneNumber} отсутствуют. \n");
                 }
             }
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Error, $"Ошибка сервера: {ex.Message}");
+                _logger.Log(LogLevel.Error, $"Ошибка сервера: {ex.Message} \n");
                 throw;
             }
             

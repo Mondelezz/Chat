@@ -48,12 +48,12 @@ namespace Quantum.Controllers
             try
             {
                 string senderPhoneNumber = _jwtTokenProcess.GetPhoneNumberFromJwtToken(token);
-                _logger.Log(LogLevel.Information, $"Номер телефона отправителя: {senderPhoneNumber}");
+                _logger.Log(LogLevel.Information, $"Номер телефона отправителя: {senderPhoneNumber} \n");
                 return senderPhoneNumber;
             }
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Error, $"Номер телефона отправителя отсутствует. {ex.Message}");
+                _logger.Log(LogLevel.Error, $"Номер телефона отправителя отсутствует. {ex.Message} \n");
                 throw;
             }                     
         }
@@ -63,12 +63,12 @@ namespace Quantum.Controllers
             try
             {
                 string receiverPhoneNumber = HttpContext.Request.Query["receiverPhoneNumber"]!;
-                _logger.Log(LogLevel.Information, $"Номер телефона получателя: {receiverPhoneNumber}");
+                _logger.Log(LogLevel.Information, $"Номер телефона получателя: {receiverPhoneNumber}  \n");
                 return receiverPhoneNumber;
             }
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Error, $"Номер телефона получателя отсутствует. {ex.Message}");
+                _logger.Log(LogLevel.Error, $"Номер телефона получателя отсутствует. {ex.Message}  \n");
                 throw;
             }
         }
@@ -107,24 +107,29 @@ namespace Quantum.Controllers
                             }
                             else
                             {
-                                byte[] receivedBuffers = buffers.Skip(buffers.Offset).Take(receiveResult.Count).ToArray();
+                                byte[] receivedBuffers = buffers.Skip(count: buffers.Offset).Take(count: receiveResult.Count).ToArray();
                                 await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
-                                _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.{Encoding.UTF8.GetString(receivedBuffers)}");
+                                _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.{senderPhoneNumber}: {Encoding.UTF8.GetString(receivedBuffers)}\n");
                             }                         
                         }                      
                     }
+                    
                 }
                 catch (Exception)
                 {
+                    if (webSocket.State == WebSocketState.CloseSent)
+                    {
+                        _logger.Log(LogLevel.Information, $"Соединение закрыто успешно.\n");
+                        return Ok();
+                    }
                     throw;
                 }
-                await webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, webSocket.CloseStatusDescription, CancellationToken.None);
-                return Ok("Сообщение отправлено успешно.");
+                return Ok();
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Сообщение об ошибке отправки: {ex.Message}");
-                return StatusCode(500, "Ошибка");
+                _logger.LogError($"Сообщение об ошибке отправки: {ex.Message}\n");
+                return BadRequest();
             }
         }
         

@@ -13,7 +13,7 @@ namespace Quantum.Services.WebSocketServices
             _logger = logger;
         }       
 
-        public async Task SendMessageToUser(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes, Dictionary<string, List<WebSocket>> phoneToWebSockets)
+        public async Task<bool> SendMessageToUser(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
             
             try
@@ -27,22 +27,23 @@ namespace Quantum.Services.WebSocketServices
                         if (userWebSocket.State == WebSocketState.Open)
                         {
                             await userWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                            return true;
                             
-                        }
-                        else
-                        {
-                            _logger.Log(LogLevel.Warning, "Соединение веб-сокет отсутствует");
-                        }
+                        }                       
                     }
+                    _logger.Log(LogLevel.Warning, "Соединение веб-сокет отсутствует.\n");
+                    return false;
                 }
                 else
                 {
-                    _logger.Log(LogLevel.Warning, "Пользователь не в сети");
+                    _logger.Log(LogLevel.Warning, $"Не существует пользователя с телефоном: {receiverPhoneNumber}\n");
+                    return false;
                 }
             }
             catch (Exception ex)
             {
-                _logger.Log(LogLevel.Error, $"Ошибка отправки сообщения от пользователя по номеру телефона {senderPhoneNumber} пользователю по номеру телефона {receiverPhoneNumber}: {ex.Message}");
+                _logger.Log(LogLevel.Error, $"Ошибка отправки сообщения от пользователя по номеру телефона {senderPhoneNumber} пользователю по номеру телефона {receiverPhoneNumber}: {ex.Message}\n");
+                return false;
             }
 
         }

@@ -9,6 +9,7 @@ namespace Quantum.Mapping
         public AppMappingProfile()
         {
             CreateMap<RegistrationUserDTO, User>().ReverseMap();
+            CreateMap<User, UserInfoOutput>().ReverseMap();
         }
     }
 }
