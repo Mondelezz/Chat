@@ -42,43 +42,22 @@ namespace Quantum.Services.UserServices
         [Authorize(AuthenticationSchemes = "Bearer")]
         [Authorize]
         public async Task<UserInfoOutput> UserUpdateInfoAsync(UpdateInfo updateInfo, string token)
-        {
-            try
-            {
-                if (updateInfo != null)
-                {
-                    Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(token);
-                    User user = _dataContext.Users.First(id => id.UserId == userId);
-                    if (user != null)
-                    {
-                        user.UserName = updateInfo.UserName;
-                        user.PhoneNumber = updateInfo.PhoneNumber;
-                        _dataContext.Users.Update(user);
-                        await _dataContext.SaveChangesAsync();
+        {            
+                Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(token);
+                User user = _dataContext.Users.First(id => id.UserId == userId);
 
-                        _logger.Log(LogLevel.Information, $"Данные обновлены успешно.\n\t" +
-                            $"{user.UserName}, " +
-                            $"{user.PhoneNumber}\n");
+                user.UserName = updateInfo.UserName;
+                user.PhoneNumber = updateInfo.PhoneNumber;
+                _dataContext.Users.Update(user);
+                await _dataContext.SaveChangesAsync();
 
-                        UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
-                        return userInfoOutput;
-                    }
-                    else
-                    {
-                        _logger.Log(LogLevel.Warning, $"Пользователь с {userId} не найден.");
-                        throw new Exception("Пользователь не найден.");                       
-                    }
-                }
-                else
-                {
-                    _logger.Log(LogLevel.Warning, $"Информация о пользователе не указана.{updateInfo.UserName} \t {updateInfo.PhoneNumber}");
-                    throw new Exception("Проверьте корректность введённых данных.");
-                }
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+                _logger.Log(LogLevel.Information, $"Данные обновлены успешно.\n\t" +
+                    $"{user.UserName}, " +
+                    $"{user.PhoneNumber}\n");
+
+                UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
+                return userInfoOutput;
+           
         }
         private string GetHashPasswrod(string password, string confirmPasswrod)
         {

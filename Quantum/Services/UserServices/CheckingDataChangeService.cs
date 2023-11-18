@@ -25,9 +25,9 @@ namespace Quantum.Services.UserServices
 
                 Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(authToken);
 
-                User user = await _dataContext.Users.FirstAsync(x => x.UserId == userId);
+                User user = await _dataContext.Users.AsNoTracking().FirstAsync(x => x.UserId == userId);
 
-                if (user != null && user.PhoneNumber == senderPhoneNumber)
+                if (user.PhoneNumber == senderPhoneNumber)
                 {
                     _logger.Log(LogLevel.Information, "Данные пользователя соответствуют. Изменений не выявлено.\n");
                     return false;
