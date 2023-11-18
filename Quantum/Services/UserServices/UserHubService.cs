@@ -56,7 +56,7 @@ namespace Quantum.Services.UserServices
                         _dataContext.Users.Update(user);
                         await _dataContext.SaveChangesAsync();
 
-                        _logger.Log(LogLevel.Information, $"Данные обновлены успешно.\n" +
+                        _logger.Log(LogLevel.Information, $"Данные обновлены успешно.\n\t" +
                             $"{user.UserName}, " +
                             $"{user.PhoneNumber}\n");
 
