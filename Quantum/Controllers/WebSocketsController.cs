@@ -49,6 +49,7 @@ namespace Quantum.Controllers
             {
                 string senderPhoneNumber = _jwtTokenProcess.GetPhoneNumberFromJwtToken(token);
                 _logger.Log(LogLevel.Information, $"Номер телефона отправителя: {senderPhoneNumber} \n");
+
                 return senderPhoneNumber;
             }
             catch (Exception ex)
@@ -64,6 +65,7 @@ namespace Quantum.Controllers
             {
                 string receiverPhoneNumber = HttpContext.Request.Query["receiverPhoneNumber"]!;
                 _logger.Log(LogLevel.Information, $"Номер телефона получателя: {receiverPhoneNumber}  \n");
+
                 return receiverPhoneNumber;
             }
             catch (Exception ex)
@@ -72,66 +74,119 @@ namespace Quantum.Controllers
                 throw;
             }
         }
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        //[HttpGet("send")]
+        //public async Task<IActionResult> HandleNewWebSocketConnection()
+        //{
+        //    try
+        //    {
+        //        // Токен из заголовка запроса
+        //        string token = ExtractAuthTokenFromHeaders();
+
+        //        WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+
+        //        // Отправитель
+        //        string senderPhoneNumber = GetSenderPhoneNumber(token);
+
+        //        Dictionary<string, List<WebSocket>> phoneToWebSockets = _webSocketToClient.AddWebSocketToClient(webSocket, senderPhoneNumber);
+
+        //        // Получатель
+        //        string receiverPhoneNumber = GetReceivePhoneNumber();
+
+        //        // Осуществляю отправку сообщения
+        //        while (webSocket.State == WebSocketState.Open)
+        //        {
+        //            ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
+        //            WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
+        //            if (receiveResult.MessageType == WebSocketMessageType.Text && receiveResult.EndOfMessage)
+        //            {
+        //                bool result = await _checkingDataChange.CheckingDataChangeAsync(token, senderPhoneNumber);
+        //                if (result)
+        //                {
+        //                    await _webSocketToClient.CloseWebSocketConnection(webSocket, senderPhoneNumber);
+        //                }
+        //                else
+        //                {
+        //                    byte[] receivedBuffers = buffers.Skip(count: buffers.Offset)
+        //                                                    .Take(count: receiveResult.Count)
+        //                                                    .ToArray();
+
+        //                    await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
+        //                    _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.{senderPhoneNumber}: {Encoding.UTF8.GetString(receivedBuffers)}\n");
+        //                }
+        //            }
+        //        }
+               
+        //        if (webSocket.State == WebSocketState.CloseSent)
+        //        {
+        //            _logger.Log(LogLevel.Information, $"Соединение закрыто успешно.\n");
+        //            return Ok();
+        //        }
+                              
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError($"Сообщение об ошибке отправки: {ex.Message}\n");
+        //        return BadRequest();
+        //    }
+        //}
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("send")]
-        public async Task<ActionResult> HandleNewWebSocketConnection()
+        public async Task<IActionResult> HandleNewWebSocketConnection()
         {
             try
             {
                 // Токен из заголовка запроса
                 string token = ExtractAuthTokenFromHeaders();
-
+                // Веб-сокет соединение
                 WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-
                 // Отправитель
                 string senderPhoneNumber = GetSenderPhoneNumber(token);
 
                 Dictionary<string, List<WebSocket>> phoneToWebSockets = _webSocketToClient.AddWebSocketToClient(webSocket, senderPhoneNumber);
 
-                // Получатель
-                string receiverPhoneNumber = GetReceivePhoneNumber();
+                await ProcessWebSocketMessages(webSocket, senderPhoneNumber, token, phoneToWebSockets);
 
-                // Осуществляю отправку сообщения
-                try
-                {
-                    while (webSocket.State == WebSocketState.Open)
-                    {
-                        ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
-                        WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
-                        if (receiveResult.MessageType == WebSocketMessageType.Text && receiveResult.EndOfMessage)
-                        {
-                            bool result = await _checkingDataChange.CheckingDataChangeAsync(token, senderPhoneNumber);
-                            if (result)
-                            {
-                                await _webSocketToClient.CloseWebSocketConnection(webSocket, senderPhoneNumber);
-                            }
-                            else
-                            {
-                                byte[] receivedBuffers = buffers.Skip(count: buffers.Offset).Take(count: receiveResult.Count).ToArray();
-                                await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
-                                _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.{senderPhoneNumber}: {Encoding.UTF8.GetString(receivedBuffers)}\n");
-                            }                         
-                        }                      
-                    }
-                    
-                }
-                catch (Exception)
-                {
-                    if (webSocket.State == WebSocketState.CloseSent)
-                    {
-                        _logger.Log(LogLevel.Information, $"Соединение закрыто успешно.\n");
-                        return Ok();
-                    }
-                    throw;
-                }
                 return Ok();
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Сообщение об ошибке отправки: {ex.Message}\n");
-                return BadRequest();
+                _logger.LogError($"Ошибка подключения к веб-сокет соединению: {ex.Message}\n");
+                throw;
             }
         }
-        
+        private async Task ProcessWebSocketMessages(WebSocket webSocket, string senderPhoneNumber, string token, Dictionary<string, List<WebSocket>> phoneToWebSockets)
+        {
+            // Получатель
+            string receiverPhoneNumber = GetReceivePhoneNumber();
+
+            while (webSocket.State == WebSocketState.Open)
+            {
+                ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
+                WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
+                if (receiveResult.MessageType == WebSocketMessageType.Text && receiveResult.EndOfMessage)
+                {
+                    await ProcessTextMessage(webSocket, senderPhoneNumber, receiverPhoneNumber, buffers, receiveResult, token, phoneToWebSockets);
+                }
+            }
+        }
+        private async Task ProcessTextMessage(WebSocket webSocket, string senderPhoneNumber, string receiverPhoneNumber, ArraySegment<byte> buffers, WebSocketReceiveResult receiveResult, string token, Dictionary<string, List<WebSocket>> phoneToWebSockets)
+        {
+            bool result = await _checkingDataChange.CheckingDataChangeAsync(token, senderPhoneNumber);
+            if (result)
+            {
+                await _webSocketToClient.CloseWebSocketConnection(webSocket, senderPhoneNumber);
+            }
+            else
+            {
+                byte[] receivedBuffers = buffers.Skip(count: buffers.Offset)
+                                                .Take(count: receiveResult.Count)
+                                                .ToArray();
+
+                await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
+                _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.\n\t{senderPhoneNumber}: {Encoding.UTF8.GetString(receivedBuffers)}\n");
+            }
+        }
+
     }
 }
