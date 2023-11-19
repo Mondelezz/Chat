@@ -74,64 +74,12 @@ namespace Quantum.Controllers
                 throw;
             }
         }
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        //[HttpGet("send")]
-        //public async Task<IActionResult> HandleNewWebSocketConnection()
-        //{
-        //    try
-        //    {
-        //        // Токен из заголовка запроса
-        //        string token = ExtractAuthTokenFromHeaders();
-
-        //        WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-
-        //        // Отправитель
-        //        string senderPhoneNumber = GetSenderPhoneNumber(token);
-
-        //        Dictionary<string, List<WebSocket>> phoneToWebSockets = _webSocketToClient.AddWebSocketToClient(webSocket, senderPhoneNumber);
-
-        //        // Получатель
-        //        string receiverPhoneNumber = GetReceivePhoneNumber();
-
-        //        // Осуществляю отправку сообщения
-        //        while (webSocket.State == WebSocketState.Open)
-        //        {
-        //            ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
-        //            WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
-        //            if (receiveResult.MessageType == WebSocketMessageType.Text && receiveResult.EndOfMessage)
-        //            {
-        //                bool result = await _checkingDataChange.CheckingDataChangeAsync(token, senderPhoneNumber);
-        //                if (result)
-        //                {
-        //                    await _webSocketToClient.CloseWebSocketConnection(webSocket, senderPhoneNumber);
-        //                }
-        //                else
-        //                {
-        //                    byte[] receivedBuffers = buffers.Skip(count: buffers.Offset)
-        //                                                    .Take(count: receiveResult.Count)
-        //                                                    .ToArray();
-
-        //                    await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
-        //                    _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.{senderPhoneNumber}: {Encoding.UTF8.GetString(receivedBuffers)}\n");
-        //                }
-        //            }
-        //        }
-               
-        //        if (webSocket.State == WebSocketState.CloseSent)
-        //        {
-        //            _logger.Log(LogLevel.Information, $"Соединение закрыто успешно.\n");
-        //            return Ok();
-        //        }
-                              
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError($"Сообщение об ошибке отправки: {ex.Message}\n");
-        //        return BadRequest();
-        //    }
-        //}
+        /// <summary>
+        /// Управление вебсокет соединениями
+        /// </summary>
+        /// <returns></returns>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [HttpGet("send")]
+        [HttpGet("send")]        
         public async Task<IActionResult> HandleNewWebSocketConnection()
         {
             try
@@ -155,6 +103,19 @@ namespace Quantum.Controllers
                 throw;
             }
         }
+
+        /// <summary>
+        ///  Мониторинг состояния соединения и обеспечивает чтение данных, переданных по веб-сокет соединению
+        /// </summary>
+        /// <param name="webSocket"></param>
+        /// Веб-сокет соединение
+        /// <param name="senderPhoneNumber"></param>
+        /// Номер отправителя
+        /// <param name="token"></param>
+        /// jwt токен
+        /// <param name="phoneToWebSockets"></param>
+        /// Словарь номеров телефонов и их сокет соединений
+        /// <returns></returns>
         private async Task ProcessWebSocketMessages(WebSocket webSocket, string senderPhoneNumber, string token, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
             // Получатель
@@ -169,7 +130,30 @@ namespace Quantum.Controllers
                     await ProcessTextMessage(webSocket, senderPhoneNumber, receiverPhoneNumber, buffers, receiveResult, token, phoneToWebSockets);
                 }
             }
+            if (webSocket.State == WebSocketState.CloseSent)
+            {
+                _logger.Log(LogLevel.Information, $"Соединение закрыто успешно.\n");
+            }
+            
         }
+        /// <summary>
+        /// Процесс отправки сообщения пользователю, а также обеспечение закрытие соединения при изменении данных пользователя и отмену отправки сообщения
+        /// </summary>
+        /// <param name="webSocket"></param>
+        /// Веб-сокет соединение
+        /// <param name="senderPhoneNumber"></param>
+        /// Номер отправителя 
+        /// <param name="receiverPhoneNumber"></param>
+        /// Номер получателя
+        /// <param name="buffers"></param>
+        /// Сегмент данных
+        /// <param name="receiveResult"></param>
+        /// Объект содержит информацию о сообщении: Count : длину, MessageType: тип, EndOfMessage: является ли сообщение завершенным
+        /// <param name="token"></param>
+        /// jwt токен
+        /// <param name="phoneToWebSockets"></param>
+        /// Словарь номеров телефонов и их сокет соединений
+        /// <returns></returns>
         private async Task ProcessTextMessage(WebSocket webSocket, string senderPhoneNumber, string receiverPhoneNumber, ArraySegment<byte> buffers, WebSocketReceiveResult receiveResult, string token, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
             bool result = await _checkingDataChange.CheckingDataChangeAsync(token, senderPhoneNumber);
