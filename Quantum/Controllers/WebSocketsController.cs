@@ -27,6 +27,36 @@ namespace Quantum.Controllers
             _checkingDataChange = checkingDataChange;
         }
 
+        /// <summary>
+        /// Управление вебсокет соединениями
+        /// </summary>
+        /// <returns></returns>
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("send")]
+        public async Task<IActionResult> HandleNewWebSocketConnection()
+        {
+            try
+            {
+                // Токен из заголовка запроса
+                string token = ExtractAuthTokenFromHeaders();
+                // Веб-сокет соединение
+                WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                // Отправитель
+                string senderPhoneNumber = GetSenderPhoneNumber(token);
+
+                Dictionary<string, List<WebSocket>> phoneToWebSockets = _webSocketToClient.AddWebSocketToClient(webSocket, senderPhoneNumber);
+
+                await ProcessWebSocketMessages(webSocket, senderPhoneNumber, token, phoneToWebSockets);
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Ошибка подключения к веб-сокет соединению: {ex.Message}\n");
+                throw;
+            }
+        }
+
         // Получение токена из заголовка авторизации
         private string ExtractAuthTokenFromHeaders()
         {
@@ -73,36 +103,7 @@ namespace Quantum.Controllers
                 _logger.Log(LogLevel.Error, $"Номер телефона получателя отсутствует. {ex.Message}  \n");
                 throw;
             }
-        }
-        /// <summary>
-        /// Управление вебсокет соединениями
-        /// </summary>
-        /// <returns></returns>
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [HttpGet("send")]        
-        public async Task<IActionResult> HandleNewWebSocketConnection()
-        {
-            try
-            {
-                // Токен из заголовка запроса
-                string token = ExtractAuthTokenFromHeaders();
-                // Веб-сокет соединение
-                WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                // Отправитель
-                string senderPhoneNumber = GetSenderPhoneNumber(token);
-
-                Dictionary<string, List<WebSocket>> phoneToWebSockets = _webSocketToClient.AddWebSocketToClient(webSocket, senderPhoneNumber);
-
-                await ProcessWebSocketMessages(webSocket, senderPhoneNumber, token, phoneToWebSockets);
-
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Ошибка подключения к веб-сокет соединению: {ex.Message}\n");
-                throw;
-            }
-        }
+        }       
 
         /// <summary>
         ///  Мониторинг состояния соединения и обеспечивает чтение данных, переданных по веб-сокет соединению
