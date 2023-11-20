@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Quantum.Interfaces.UserInterface;
 using Quantum.Interfaces.WebSocketInterface;
 using Quantum.Services;
+using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -33,7 +34,7 @@ namespace Quantum.Controllers
         /// <returns></returns>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("send")]
-        public async Task<IActionResult> HandleNewWebSocketConnection()
+        public async Task HandleNewWebSocketConnection()
         {
             try
             {
@@ -48,7 +49,6 @@ namespace Quantum.Controllers
 
                 await ProcessWebSocketMessages(webSocket, senderPhoneNumber, token, phoneToWebSockets);
 
-                return Ok();
             }
             catch (Exception ex)
             {
