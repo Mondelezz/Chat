@@ -4,6 +4,6 @@ namespace Quantum.Interfaces
 {
     public interface IAuthorization
     {
-        public Task<string> AuthenticateUser(AuthorizationUserDTO authorizationUserDTO);
+        public Task<string> AuthenticateUserAsync(AuthorizationUserDTO authorizationUserDTO);
     }
 }

@@ -21,7 +21,7 @@ namespace Quantum.Services.UserServices
             _logger = logger;
             _jwtTokenProcess = jwtTokenProcess;
         }
-        public async Task EnterUserInformation(RegistrationUserDTO registrationUserDTO)
+        public async Task EnterUserInformationAsync(RegistrationUserDTO registrationUserDTO)
         {
             if (registrationUserDTO == null)
             {
@@ -30,7 +30,7 @@ namespace Quantum.Services.UserServices
             }
             try
             {
-                await AddUserToDatabase(registrationUserDTO);
+                await AddUserToDatabaseAsync(registrationUserDTO);
                 _logger.Log(LogLevel.Information, "Данные были сохранены в базу данных");
             }
             catch (Exception ex)
@@ -51,9 +51,9 @@ namespace Quantum.Services.UserServices
                 _dataContext.Users.Update(user);
                 await _dataContext.SaveChangesAsync();
 
-                _logger.Log(LogLevel.Information, $"Данные обновлены успешно.\n\t" +
-                    $"{user.UserName}, " +
-                    $"{user.PhoneNumber}\n");
+                _logger.Log(LogLevel.Information, $"Данные успешно обновлены.\n\t" +
+                    $"{user.UserName},\n" +
+                    $"\t{user.PhoneNumber}\n");
 
                 UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
                 return userInfoOutput;
@@ -74,7 +74,7 @@ namespace Quantum.Services.UserServices
             throw new Exception("Пароли не совпадают");
         }
 
-        private async Task AddUserToDatabase(RegistrationUserDTO registrationUserDTO)
+        private async Task AddUserToDatabaseAsync(RegistrationUserDTO registrationUserDTO)
         {
             User user = _mapper.Map<User>(registrationUserDTO);
             user.UserId = Guid.NewGuid();

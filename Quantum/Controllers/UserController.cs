@@ -40,7 +40,7 @@ namespace Quantum.Controllers
         {
             try
             {
-                await _userHub.EnterUserInformation(registrationUserDTO);                
+                await _userHub.EnterUserInformationAsync(registrationUserDTO);                
             }
             catch (Exception)
             {

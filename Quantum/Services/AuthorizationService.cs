@@ -20,7 +20,7 @@ namespace Quantum.Services
             _logger = logger;
         }
 
-        public async Task<string> AuthenticateUser(AuthorizationUserDTO authorizationUserDTO)
+        public async Task<string> AuthenticateUserAsync(AuthorizationUserDTO authorizationUserDTO)
         {
             try
             {

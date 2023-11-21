@@ -49,14 +49,15 @@ namespace Quantum.Services.WebSocketServices
                 Locker.ExitWriteLock();
             }
         }   
-        public async Task CloseWebSocketConnection(WebSocket webSocket, string senderPhoneNumber)
+        public async Task CloseWebSocketConnectionAsync(WebSocket webSocket, string senderPhoneNumber)
         {
             try
             {
                 string phoneNumber = senderPhoneNumber;
                 if (PhoneToWebSockets.ContainsKey(phoneNumber))
                 {
-                    await webSocket.CloseOutputAsync( closeStatus: WebSocketCloseStatus.NormalClosure,
+                    await webSocket.CloseOutputAsync(
+                        closeStatus: WebSocketCloseStatus.NormalClosure,
                         statusDescription: webSocket.CloseStatusDescription,
                         cancellationToken: CancellationToken.None);
 

@@ -24,7 +24,7 @@ namespace Quantum.Controllers
             {
                 try
                 {
-                    string jwtToken = await _authorization.AuthenticateUser(authorizationUserDTO);
+                    string jwtToken = await _authorization.AuthenticateUserAsync(authorizationUserDTO);
                     return Ok(jwtToken);
                 }
                 catch (Exception ex)

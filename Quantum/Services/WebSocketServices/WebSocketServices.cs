@@ -13,7 +13,7 @@ namespace Quantum.Services.WebSocketServices
             _logger = logger;
         }       
 
-        public async Task<bool> SendMessageToUser(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes, Dictionary<string, List<WebSocket>> phoneToWebSockets)
+        public async Task<bool> SendMessageToUserAsync(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
             
             try
@@ -26,13 +26,10 @@ namespace Quantum.Services.WebSocketServices
                     {
                         if (userWebSocket.State == WebSocketState.Open)
                         {
-                            await userWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);
-                            return true;
-                            
-                        }                       
+                            await userWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);                                                  
+                        }                 
                     }
-                    _logger.Log(LogLevel.Warning, "Соединение веб-сокет отсутствует.\n");
-                    return false;
+                    return true;
                 }
                 else
                 {

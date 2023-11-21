@@ -25,7 +25,9 @@ namespace Quantum.Services.UserServices
 
                 Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(authToken);
 
-                User user = await _dataContext.Users.AsNoTracking().FirstAsync(x => x.UserId == userId);
+                User user = await _dataContext.Users
+                    .AsNoTracking()
+                    .FirstAsync(x => x.UserId == userId);
 
                 if (user.PhoneNumber == senderPhoneNumber)
                 {
@@ -34,7 +36,7 @@ namespace Quantum.Services.UserServices
                 }
                 else
                 {
-                    _logger.Log(LogLevel.Warning, "Данные не соответствуют, либо пользователя не существует\nРазрываю веб-сокет соединение.\n");
+                    _logger.Log(LogLevel.Warning, "Данные не соответствуют, либо пользователя не существует\n\tРазрываю веб-сокет соединение.\n");
                     return true;
                 }
                 

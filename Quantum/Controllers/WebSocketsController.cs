@@ -41,6 +41,7 @@ namespace Quantum.Controllers
                 // Токен из заголовка запроса
                 string token = ExtractAuthTokenFromHeaders();
                 // Веб-сокет соединение
+                               
                 WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
                 // Отправитель
                 string senderPhoneNumber = GetSenderPhoneNumber(token);
@@ -53,7 +54,7 @@ namespace Quantum.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"Ошибка подключения к веб-сокет соединению: {ex.Message}\n");
-                throw;
+                throw new Exception("Не вебсокет соединение.");
             }
         }
 
@@ -160,7 +161,7 @@ namespace Quantum.Controllers
             bool result = await _checkingDataChange.CheckingDataChangeAsync(token, senderPhoneNumber);
             if (result)
             {
-                await _webSocketToClient.CloseWebSocketConnection(webSocket, senderPhoneNumber);
+                await _webSocketToClient.CloseWebSocketConnectionAsync(webSocket, senderPhoneNumber);
             }
             else
             {
@@ -168,8 +169,16 @@ namespace Quantum.Controllers
                                                 .Take(count: receiveResult.Count)
                                                 .ToArray();
 
-                await _webSocket.SendMessageToUser(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
-                _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.\n\t{senderPhoneNumber}: {Encoding.UTF8.GetString(receivedBuffers)}\n");
+              bool resultSendMessage =  await _webSocket.SendMessageToUserAsync(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
+               if (resultSendMessage)
+               {
+                   _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.\n\t{senderPhoneNumber}: {Encoding.UTF8.GetString(receivedBuffers)}\n");
+               }
+               else
+               {
+                    _logger.Log(LogLevel.Warning, $"Получателя нет, отправить некому.");
+                    throw new Exception($"Cообщение НЕ отправлено!\n\t{senderPhoneNumber}: {Encoding.UTF8.GetString(receivedBuffers)}\n");
+               } 
             }
         }
 
