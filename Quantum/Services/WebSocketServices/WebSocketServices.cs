@@ -20,14 +20,22 @@ namespace Quantum.Services.WebSocketServices
             {
                 if (phoneToWebSockets.ContainsKey(receiverPhoneNumber))
                 {
-                    List<WebSocket> userWebSockets = phoneToWebSockets[receiverPhoneNumber];
-
-                    foreach (var userWebSocket in userWebSockets)
+                    List<WebSocket> userReceiverWebSockets = phoneToWebSockets[receiverPhoneNumber];
+                    List<WebSocket> userSenderWebSockets = phoneToWebSockets[senderPhoneNumber];
+                    foreach (var userReceiverWebSocket in userReceiverWebSockets)
                     {
-                        if (userWebSocket.State == WebSocketState.Open)
-                        {
-                            await userWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);                                                  
+                        if (userReceiverWebSocket.State == WebSocketState.Open)
+                        {                           
+                            await userReceiverWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                                                                                                        
                         }                 
+                    }
+                    foreach (var userSenderWebSocket in userSenderWebSockets)
+                    {
+                        if (userSenderWebSocket.State == WebSocketState.Open)
+                        {
+                            await userSenderWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                        }
                     }
                     return true;
                 }
