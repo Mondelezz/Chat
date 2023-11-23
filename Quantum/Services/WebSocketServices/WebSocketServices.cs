@@ -1,4 +1,7 @@
-﻿using Quantum.Interfaces.WebSocketInterface;
+﻿using Quantum.Data;
+using Quantum.Interfaces.WebSocketInterface;
+using Quantum.Models;
+using Quantum.Models.DTO;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -7,36 +10,34 @@ namespace Quantum.Services.WebSocketServices
     public class WebSocketServices : IWebSocket
     {
         private readonly ILogger<WebSocketServices> _logger;
-        
-        public WebSocketServices(ILogger<WebSocketServices> logger)
+        private readonly DataContext _dataContext;
+        public WebSocketServices(ILogger<WebSocketServices> logger, DataContext dataContext)
         {
             _logger = logger;
+            _dataContext = dataContext;
         }       
 
         public async Task<bool> SendMessageToUserAsync(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
-            
+            User? userSender = _dataContext.Users.FirstOrDefault(pN => pN.PhoneNumber == senderPhoneNumber);
+            User? userReceiver = _dataContext.Users.FirstOrDefault(pN => pN.PhoneNumber == receiverPhoneNumber);
+            if (userSender == null || userReceiver == null)
+            {
+                throw new Exception("Пользователь не найден.");
+            }
             try
             {
                 if (phoneToWebSockets.ContainsKey(receiverPhoneNumber))
                 {
                     List<WebSocket> userReceiverWebSockets = phoneToWebSockets[receiverPhoneNumber];
-                    List<WebSocket> userSenderWebSockets = phoneToWebSockets[senderPhoneNumber];
                     foreach (var userReceiverWebSocket in userReceiverWebSockets)
                     {
                         if (userReceiverWebSocket.State == WebSocketState.Open)
-                        {                           
-                            await userReceiverWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);
-                                                                                                        
-                        }                 
-                    }
-                    foreach (var userSenderWebSocket in userSenderWebSockets)
-                    {
-                        if (userSenderWebSocket.State == WebSocketState.Open)
                         {
-                            await userSenderWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);
-                        }
-                    }
+                            await userReceiverWebSocket.SendAsync(new ArraySegment<byte>(messageBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                            await SaveMessageInDataBaseAsync(userSender, userReceiver, messageBytes);
+                        }                                                            
+                    }                  
                     return true;
                 }
                 else
@@ -53,7 +54,24 @@ namespace Quantum.Services.WebSocketServices
 
         }
 
+        public async Task SaveMessageInDataBaseAsync(User userSender, User userReceiver, byte[] messageBytes)
+        {
 
+            TextMessage messages = new TextMessage();
+            messages.SenderPhoneNumber = userSender.PhoneNumber;           
+            messages.SenderUserId = userSender.UserId;
+            
+            messages.Message = Encoding.UTF8.GetString(messageBytes);
+            messages.SentTime = DateTime.UtcNow;
+
+            messages.ReceiverPhoneNumber = userReceiver.PhoneNumber;
+            messages.ReceiverUserId = userReceiver.UserId;
+
+            _dataContext.Messages.Add(messages);
+            await _dataContext.SaveChangesAsync();
+
+            _logger.Log(LogLevel.Information, "Данные сохранены успешно.");
+        }
 
 
 

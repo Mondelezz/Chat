@@ -54,7 +54,7 @@ namespace Quantum.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"Ошибка подключения к веб-сокет соединению: {ex.Message}\n");
-                throw new Exception("Не вебсокет соединение.");
+                throw new Exception(ex.ToString());
             }
         }
 
@@ -177,8 +177,9 @@ namespace Quantum.Controllers
                else
                {
                     _logger.Log(LogLevel.Warning, $"Получателя нет, отправить некому.");
-                    throw new Exception($"Cообщение НЕ отправлено!\n\t{senderPhoneNumber}: {Encoding.UTF8.GetString(receivedBuffers)}\n");
-               } 
+
+                    await _webSocketToClient.CloseWebSocketConnectionAsync(webSocket, senderPhoneNumber);
+                } 
             }
         }
 
