@@ -1,4 +1,5 @@
-﻿using Quantum.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using Quantum.Data;
 using Quantum.Interfaces.WebSocketInterface;
 using Quantum.Models;
 using Quantum.Models.DTO;
@@ -17,10 +18,15 @@ namespace Quantum.Services.WebSocketServices
             _dataContext = dataContext;
         }       
 
+        // Удалить
+        public async Task GetResuly(User userSender, User userReceiver, byte[] messageBytes)
+        {
+            await SaveMessageInDataBaseAsync(userSender, userReceiver, messageBytes);
+        }
         public async Task<bool> SendMessageToUserAsync(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
-            User? userSender = _dataContext.Users.FirstOrDefault(pN => pN.PhoneNumber == senderPhoneNumber);
-            User? userReceiver = _dataContext.Users.FirstOrDefault(pN => pN.PhoneNumber == receiverPhoneNumber);
+            User? userSender = _dataContext.Users.AsNoTracking().FirstOrDefault(pN => pN.PhoneNumber == senderPhoneNumber);
+            User? userReceiver = _dataContext.Users.AsNoTracking().FirstOrDefault(pN => pN.PhoneNumber == receiverPhoneNumber);
             if (userSender == null || userReceiver == null)
             {
                 throw new Exception("Пользователь не найден.");
