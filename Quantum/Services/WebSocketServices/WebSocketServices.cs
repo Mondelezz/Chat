@@ -17,12 +17,6 @@ namespace Quantum.Services.WebSocketServices
             _logger = logger;
             _dataContext = dataContext;
         }       
-
-        // Удалить
-        public async Task GetResuly(User userSender, User userReceiver, byte[] messageBytes)
-        {
-            await SaveMessageInDataBaseAsync(userSender, userReceiver, messageBytes);
-        }
         public async Task<bool> SendMessageToUserAsync(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
             User? userSender = _dataContext.Users.AsNoTracking().FirstOrDefault(pN => pN.PhoneNumber == senderPhoneNumber);

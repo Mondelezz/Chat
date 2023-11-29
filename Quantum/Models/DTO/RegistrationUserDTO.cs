@@ -10,6 +10,7 @@ namespace Quantum.Models.DTO
 
         [Required]
         [Phone(ErrorMessage = "Некорректный формат")]
+        [MinLength(11), MaxLength(11)]
         public string PhoneNumber { get; set; } = string.Empty;
 
         [Required]

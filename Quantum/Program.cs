@@ -104,6 +104,10 @@ WebSocketOptions webSocketOptions = new WebSocketOptions()
 app.UseWebSockets(webSocketOptions);
 
 
+app.UseCors(x => x
+.AllowAnyOrigin()
+.AllowAnyMethod()
+.AllowAnyHeader());
 
 app.UseHttpsRedirection();
 app.UseRouting();
