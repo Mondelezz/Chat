@@ -77,12 +77,29 @@ namespace Quantum.Services.UserServices
         private async Task AddUserToDatabaseAsync(RegistrationUserDTO registrationUserDTO)
         {
             User user = _mapper.Map<User>(registrationUserDTO);
-            user.UserId = Guid.NewGuid();
-            user.HashPassword = GetHashPasswrod(registrationUserDTO.Password, registrationUserDTO.ConfirmPassword);
-            user.RegistrationDate = DateTime.UtcNow;
+            bool result = CheckPhoneNumberInDb(registrationUserDTO.PhoneNumber);
+            if (result)
+            {
+                user.UserId = Guid.NewGuid();
+                user.HashPassword = GetHashPasswrod(registrationUserDTO.Password, registrationUserDTO.ConfirmPassword);
+                user.RegistrationDate = DateTime.UtcNow;
 
-            await _dataContext.Users.AddAsync(user);
-            await _dataContext.SaveChangesAsync();
+                await _dataContext.Users.AddAsync(user);                
+                await _dataContext.SaveChangesAsync();
+
+                _logger.Log(LogLevel.Information, "Данные о пользователе успешно добавлены и сохранены.");
+            }
+            _logger.Log(LogLevel.Warning, "Введены данные уже существующего пользователя.");
+            throw new Exception("Номер телефона занят");
+        }
+        private bool CheckPhoneNumberInDb(string phoneNumber)
+        {
+            User? user = _dataContext.Users.FirstOrDefault(x => x.PhoneNumber == phoneNumber);
+            if (user == null)
+            {
+                return true;
+            }
+            return false;
         }
     }
 }
