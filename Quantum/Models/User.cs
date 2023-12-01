@@ -16,6 +16,7 @@ namespace Quantum.Models
         public string PhoneNumber { get; set; } = string.Empty;
 
         public string HashPassword { get; set; } = string.Empty;
+        public Dictionary<Guid, UserInfoOutput> Users { get; set; } = new Dictionary<Guid, UserInfoOutput>();
         public DateTime RegistrationDate { get; set; }
     }
 

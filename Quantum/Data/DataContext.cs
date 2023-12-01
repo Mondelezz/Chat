@@ -13,6 +13,7 @@ namespace Quantum.Data
             optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=QuantumMessage;Username=postgres;Password=26032005");
         }
         public DbSet<User> Users { get; set; }
+        public DbSet<Friends> Friends { get; set; }
         public DbSet<TextMessage> Messages {get;set;}
     }
 }

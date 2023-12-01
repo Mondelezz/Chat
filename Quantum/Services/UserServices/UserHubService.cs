@@ -41,7 +41,7 @@ namespace Quantum.Services.UserServices
         }
         [Authorize(AuthenticationSchemes = "Bearer")]
         [Authorize]
-        public async Task<UserInfoOutput> UserUpdateInfoAsync(UpdateInfo updateInfo, string token)
+        public async Task<UserInfoOutput> UserUpdateInfoAsync(UsersOpenData updateInfo, string token)
         {            
                 Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(token);
                 User user = _dataContext.Users.First(id => id.UserId == userId);
@@ -75,22 +75,22 @@ namespace Quantum.Services.UserServices
         }
 
         private async Task AddUserToDatabaseAsync(RegistrationUserDTO registrationUserDTO)
-        {
-            User user = _mapper.Map<User>(registrationUserDTO);
+        {           
             bool result = CheckPhoneNumberInDb(registrationUserDTO.PhoneNumber);
-            if (result)
+            if (!result)
             {
-                user.UserId = Guid.NewGuid();
-                user.HashPassword = GetHashPasswrod(registrationUserDTO.Password, registrationUserDTO.ConfirmPassword);
-                user.RegistrationDate = DateTime.UtcNow;
-
-                await _dataContext.Users.AddAsync(user);                
-                await _dataContext.SaveChangesAsync();
-
-                _logger.Log(LogLevel.Information, "Данные о пользователе успешно добавлены и сохранены.");
+                _logger.Log(LogLevel.Warning, "Введены данные уже существующего пользователя.");
+                throw new Exception("Номер телефона занят");               
             }
-            _logger.Log(LogLevel.Warning, "Введены данные уже существующего пользователя.");
-            throw new Exception("Номер телефона занят");
+            User user = _mapper.Map<User>(registrationUserDTO);
+            user.UserId = Guid.NewGuid();
+            user.HashPassword = GetHashPasswrod(registrationUserDTO.Password, registrationUserDTO.ConfirmPassword);
+            user.RegistrationDate = DateTime.UtcNow;
+
+            await _dataContext.Users.AddAsync(user);
+            await _dataContext.SaveChangesAsync();
+
+            _logger.Log(LogLevel.Information, "Данные о пользователе успешно добавлены и сохранены.");
         }
         private bool CheckPhoneNumberInDb(string phoneNumber)
         {

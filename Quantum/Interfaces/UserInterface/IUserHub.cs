@@ -6,6 +6,6 @@ namespace Quantum.Interfaces.UserInterface
     public interface IUserHub
     {
         public Task EnterUserInformationAsync(RegistrationUserDTO registrationUserDTO);
-        public Task<UserInfoOutput> UserUpdateInfoAsync(UpdateInfo updateInfo, string token);
+        public Task<UserInfoOutput> UserUpdateInfoAsync(UsersOpenData updateInfo, string token);
     }
 }

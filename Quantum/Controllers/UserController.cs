@@ -49,7 +49,7 @@ namespace Quantum.Controllers
         }
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut("upInfo")]
-        public async Task<ActionResult> UpdateUserInformation([FromBody] UpdateInfo updateInfo)
+        public async Task<ActionResult> UpdateUserInformation([FromBody] UsersOpenData updateInfo)
         {
             try
             {

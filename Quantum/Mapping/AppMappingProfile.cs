@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using Quantum.Models;
 using Quantum.Models.DTO;
 
@@ -10,6 +11,7 @@ namespace Quantum.Mapping
         {
             CreateMap<RegistrationUserDTO, User>().ReverseMap();
             CreateMap<User, UserInfoOutput>().ReverseMap();
+            CreateMap<User, UsersOpenData>().ReverseMap();
         }
     }
 }
