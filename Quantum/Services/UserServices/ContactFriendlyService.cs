@@ -11,23 +11,26 @@ namespace Quantum.Services.UserServices
         private readonly DataContext _dataContext;
         private readonly ILogger<ContactFriendlyService> _logger;
         private readonly IMapper _mapper;
-        public ContactFriendlyService(ILogger<ContactFriendlyService> logger, DataContext dataContext, IMapper mapper)
+        private readonly JwtTokenProcess _jwtTokenProcess;
+        public ContactFriendlyService(ILogger<ContactFriendlyService> logger, DataContext dataContext, IMapper mapper, JwtTokenProcess jwtTokenProcess)
         {
             _logger = logger;
             _dataContext = dataContext;
             _mapper = mapper;
+            _jwtTokenProcess = jwtTokenProcess;
         }
-        public async Task<UserInfoOutput> SearchUser(string phoneNumber)
+        public async Task<UserInfoOutput> SearchUser(string phoneNumber, string authHeaderValue)
         {
-            User? user = await _dataContext.Users.FirstOrDefaultAsync(pN => pN.PhoneNumber == phoneNumber);
-            UserInfoOutput userData = _mapper.Map<UserInfoOutput>(user);
+            Guid userId =  _jwtTokenProcess.GetUserIdFromJwtToken(authHeaderValue);
+            User? userReceiver = await _dataContext.Users.FirstOrDefaultAsync(pN => pN.PhoneNumber == phoneNumber);
+            UserInfoOutput userData = _mapper.Map<UserInfoOutput>(userReceiver);
             return userData;
         }
         public async Task AddFriendInContact(string phoneNumber)
         {
             UserInfoOutput result = await SearchUser(phoneNumber);
             if (result == null)
-            {
+            {     
                 return;
             }
 

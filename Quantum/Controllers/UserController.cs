@@ -13,11 +13,14 @@ namespace Quantum.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserHub _userHub;
+        private readonly IFriendAction _friendAction;
         private readonly ILogger<UserController> _logger;
-        public UserController(IUserHub userHub, ILogger<UserController> logger)
+
+        public UserController(IUserHub userHub, ILogger<UserController> logger, IFriendAction friendAction)
         {
             _userHub = userHub;
             _logger = logger;
+            _friendAction = friendAction;
         }
 
         // Получение токена из заголовка авторизации
@@ -61,6 +64,13 @@ namespace Quantum.Controllers
             {
                 return BadRequest();
             }
+        }
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("addFriends")]
+        public async Task<IActionResult> AddFriends(string phoneNumber)
+        {
+            string jwtToken = ExtractAuthTokenFromHeaders();
+            await _friendAction.SearchUser(phoneNumber, jwtToken);
         }
     }
 }
