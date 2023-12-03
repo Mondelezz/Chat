@@ -13,14 +13,26 @@ namespace Quantum.Data
             optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=QuantumMessage;Username=postgres;Password=26032005");
         }
         public DbSet<User> Users { get; set; }
-        public DbSet<Friends> Friends { get; set; }
+        public DbSet<UserInfoOutput> Friends { get; set; }
+        public DbSet<UserFriends> UserFriends { get; set; }
         public DbSet<TextMessage> Messages {get;set;}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Friends)
-                .WithMany(u => u.Users);
+
+            modelBuilder.Entity<UserFriends>()
+                .HasOne(u => u.User)
+                .WithMany(u => u.Friends)
+                .HasForeignKey(u => u.UserId);
+
+            modelBuilder.Entity<UserFriends>()
+                .HasOne(u => u.Friends)
+                .WithMany(u => u.Users)
+                .HasForeignKey(u => u.FriendId);
+
+
+            modelBuilder.Entity<UserFriends>()
+                .HasKey(e => new {e.UserId, e.FriendId});
         }
     }
 }

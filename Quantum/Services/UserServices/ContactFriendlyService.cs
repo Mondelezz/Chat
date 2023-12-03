@@ -34,6 +34,9 @@ namespace Quantum.Services.UserServices
         public async Task AddFriendInContact(string phoneNumber, string authHeaderValue)
         {
             UserInfoOutput userReceiver = await SearchUser(phoneNumber);
+            
+            //Сделать возможным добавить только 1 раз
+
             if (userReceiver == null)
             {     
                 return;
@@ -42,11 +45,11 @@ namespace Quantum.Services.UserServices
             User userSender = await _dataContext.Users.FirstAsync(id => id.UserId == userId);
             _logger.Log(LogLevel.Information, $"Пользователь отправитель {userSender.UserName}");
 
-            Friends friends = new Friends();
+            UserFriends friends = new UserFriends();
             friends.UserId = userId;
             friends.FriendId = userReceiver.UserId;
 
-            await _dataContext.Friends.AddAsync(friends);
+            await _dataContext.UserFriends.AddAsync(friends);
             _logger.Log(LogLevel.Information, $"Пользователь {userReceiver.UserName} добавлен в друзья к пользователю {userSender.UserName}");
 
             await _dataContext.SaveChangesAsync();

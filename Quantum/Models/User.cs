@@ -16,7 +16,7 @@ namespace Quantum.Models
         public string PhoneNumber { get; set; } = string.Empty;
 
         public string HashPassword { get; set; } = string.Empty;
-        public List<Friends> Friends { get; set; } = new List<Friends>();
+        public ICollection<UserFriends> Friends { get; set; } = new List<UserFriends>();
         public DateTime RegistrationDate { get; set; }
     }
 
