@@ -15,5 +15,12 @@ namespace Quantum.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Friends> Friends { get; set; }
         public DbSet<TextMessage> Messages {get;set;}
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Friends)
+                .WithMany(u => u.Users);
+        }
     }
 }

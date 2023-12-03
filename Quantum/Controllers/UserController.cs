@@ -70,7 +70,9 @@ namespace Quantum.Controllers
         public async Task<IActionResult> AddFriends(string phoneNumber)
         {
             string jwtToken = ExtractAuthTokenFromHeaders();
-            await _friendAction.SearchUser(phoneNumber, jwtToken);
+            await _friendAction.AddFriendInContact(phoneNumber, jwtToken);
+            return Ok("Пользователь добавлен в друзья");
+
         }
     }
 }
