@@ -64,6 +64,10 @@ namespace Quantum.Services.UserServices
             User userSender = await _dataContext.Users.FirstAsync(id => id.UserId == userId);
             _logger.Log(LogLevel.Information, $"Пользователь отправитель {userSender.UserName}");
 
+            if (userReceiver.PhoneNumber == userSender.PhoneNumber)
+            {
+                throw new Exception("Не удалось добавить пользователя в друзья");
+            }
             UserFriends userFriends = new UserFriends()
             {
                 UserId = userId,
