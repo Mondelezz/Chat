@@ -12,8 +12,8 @@ using Quantum.Data;
 namespace Quantum.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20231203164520_test7")]
-    partial class test7
+    [Migration("20231204092109_test5")]
+    partial class test5
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -115,9 +115,6 @@ namespace Quantum.Migrations
 
                     b.Property<Guid>("FriendId")
                         .HasColumnType("uuid");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("integer");
 
                     b.HasKey("UserId", "FriendId");
 

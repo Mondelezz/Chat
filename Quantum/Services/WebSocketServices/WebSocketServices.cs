@@ -19,8 +19,14 @@ namespace Quantum.Services.WebSocketServices
         }       
         public async Task<bool> SendMessageToUserAsync(string senderPhoneNumber, string receiverPhoneNumber, byte[] messageBytes, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
-            User? userSender = _dataContext.Users.AsNoTracking().FirstOrDefault(pN => pN.PhoneNumber == senderPhoneNumber);
-            User? userReceiver = _dataContext.Users.AsNoTracking().FirstOrDefault(pN => pN.PhoneNumber == receiverPhoneNumber);
+            List<User> users = _dataContext.Users
+                .AsNoTracking()
+                .Where(pN => pN.PhoneNumber == senderPhoneNumber || pN.PhoneNumber == receiverPhoneNumber)
+                .ToList();
+
+            User? userSender = users.FirstOrDefault(pN => pN.PhoneNumber == senderPhoneNumber);
+            User? userReceiver = users.FirstOrDefault(pN => pN.PhoneNumber == receiverPhoneNumber);
+
             if (userSender == null || userReceiver == null)
             {
                 throw new Exception("Пользователь не найден.");

@@ -87,7 +87,10 @@ namespace Quantum.Services.UserServices
             user.HashPassword = GetHashPasswrod(registrationUserDTO.Password, registrationUserDTO.ConfirmPassword);
             user.RegistrationDate = DateTime.UtcNow;
 
+            UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
+
             await _dataContext.Users.AddAsync(user);
+            await _dataContext.Friends.AddAsync(userInfoOutput);
             await _dataContext.SaveChangesAsync();
 
             _logger.Log(LogLevel.Information, "Данные о пользователе успешно добавлены и сохранены.");

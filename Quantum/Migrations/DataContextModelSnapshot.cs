@@ -113,9 +113,6 @@ namespace Quantum.Migrations
                     b.Property<Guid>("FriendId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Id")
-                        .HasColumnType("integer");
-
                     b.HasKey("UserId", "FriendId");
 
                     b.HasIndex("FriendId");
