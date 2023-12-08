@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using Quantum.Data;
 using Quantum.Interfaces.UserInterface;
 using Quantum.Models;

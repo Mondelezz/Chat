@@ -30,6 +30,7 @@ builder.Services.AddScoped<IFriendAction, ContactFriendlyService>();
 builder.Services.AddScoped<HttpContextAccessor>();
 builder.Services.AddScoped<JwtTokenProcess>();
 builder.Services.AddScoped<ICheckingDataChange, CheckingDataChangeService>();
+builder.Services.AddSignalR();
 builder.Services.AddDbContext<DataContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
