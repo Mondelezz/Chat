@@ -8,8 +8,7 @@ namespace Quantum.Controllers
     [ApiController]
     public class MessageController : ControllerBase
     {
-        [HttpPost]
-        public async Task<IActionResult<TextMessage> 
+        
             
     }
 }

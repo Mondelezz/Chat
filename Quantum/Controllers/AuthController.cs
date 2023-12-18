@@ -18,7 +18,7 @@ namespace Quantum.Controllers
         }
         [AllowAnonymous]
         [HttpPost("login")]
-        public async Task<ActionResult> AuthorizationUser([FromBody] AuthorizationUserDTO authorizationUserDTO)
+        public async Task<ActionResult<string>> AuthorizationUser([FromBody] AuthorizationUserDTO authorizationUserDTO)
         {
             if (authorizationUserDTO != null)
             {
@@ -33,7 +33,7 @@ namespace Quantum.Controllers
                     return BadRequest("Неверный логин или пароль.");
                 }               
             }
-            return BadRequest();
+            return Unauthorized();
         }
     }
 }
