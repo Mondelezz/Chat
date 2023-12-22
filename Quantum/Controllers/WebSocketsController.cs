@@ -125,18 +125,28 @@ namespace Quantum.Controllers
 
             while (webSocket.State == WebSocketState.Open)
             {
-                ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
-                WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
-                if (receiveResult.MessageType == WebSocketMessageType.Text && receiveResult.EndOfMessage)
+                ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[8192]);
+                if (buffers.Count == 0)
                 {
-                    await ProcessTextMessage(webSocket, senderPhoneNumber, receiverPhoneNumber, buffers, receiveResult, token, phoneToWebSockets);
+                    throw new Exception("Пустая строка");
                 }
+                WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
+                if (receiveResult.Count > 4096)
+                {
+                    ArraySegment<byte> buffers_2 = new ArraySegment<byte>(buffers.Array, buffers.Offset, 4096);
+                    buffers = buffers.Skip(4096).ToArray();
+
+                    if (receiveResult.MessageType == WebSocketMessageType.Text && receiveResult.EndOfMessage)
+                    {
+                        await ProcessTextMessage(webSocket, senderPhoneNumber, receiverPhoneNumber, buffers_2, receiveResult, token, phoneToWebSockets);
+                    }
+                }             
             }
             if (webSocket.State == WebSocketState.CloseSent)
             {
                 _logger.Log(LogLevel.Information, $"Соединение закрыто успешно.\n");
             }
-            
+           
         }
         /// <summary>
         /// Процесс отправки сообщения пользователю, а также обеспечение закрытие соединения при изменении данных пользователя и отмену отправки сообщения

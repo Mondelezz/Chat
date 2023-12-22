@@ -1,4 +1,5 @@
 ﻿using Quantum.Interfaces;
+using Quantum.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -67,6 +68,36 @@ namespace Quantum.Services
                 _logger.LogWarning("Не удалось прочитать userId из токена\n");
 
                 return Guid.Empty;
+            }
+        }
+        public List<UsersOpenData> GetUserInfo(string authHeaderValue)
+        {
+            JwtSecurityToken jwtSecurityToken = GetJwtToken(authHeaderValue);
+            Claim? phoneNumberClaim = jwtSecurityToken?.Claims.First(claim => claim.Type == "PhoneNumber");
+            Claim? userNameClaim = jwtSecurityToken?.Claims.First(claim => claim.Type == ClaimsIdentity.DefaultNameClaimType);
+           
+            if (phoneNumberClaim != null && userNameClaim != null)
+            {
+                UsersOpenData userData = new UsersOpenData()
+                {
+                    PhoneNumber = phoneNumberClaim.Value,
+                    UserName = userNameClaim.Value
+                };
+                
+                _logger.LogInformation($"Полученный номер телефона из jwtToken: {phoneNumberClaim.Value}\n");
+                _logger.LogInformation($"Полученное имя из jwtToken: {userNameClaim.Value}\n");
+
+                List<UsersOpenData> userInfo = new List<UsersOpenData>
+                {
+                    userData
+                };
+
+                return userInfo;
+            }
+            else
+            {
+                _logger.LogWarning("Не удалось прочитать номер телефона из токена\n");
+                throw new Exception("Не удалось распознать jwt");
             }
         }
     }

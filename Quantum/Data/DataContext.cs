@@ -34,7 +34,6 @@ namespace Quantum.Data
                 .WithMany(u => u.Users)
                 .HasForeignKey(u => u.FriendId);
 
-
             modelBuilder.Entity<UserFriends>()
                 .HasKey(e => new {e.UserId, e.FriendId});
         }

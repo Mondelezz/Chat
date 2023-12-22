@@ -2,9 +2,11 @@
 using Microsoft.AspNetCore.Authorization;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Quantum.Interfaces.UserInterface;
 using Quantum.Models;
 using Quantum.Models.DTO;
+using Quantum.Services;
 
 namespace Quantum.Controllers
 {
@@ -14,13 +16,15 @@ namespace Quantum.Controllers
     {
         private readonly IUserHub _userHub;
         private readonly IFriendAction _friendAction;
+        private readonly JwtTokenProcess _jwtTokenProcess;
         private readonly ILogger<UserController> _logger;
 
-        public UserController(IUserHub userHub, ILogger<UserController> logger, IFriendAction friendAction)
+        public UserController(IUserHub userHub, ILogger<UserController> logger, IFriendAction friendAction, JwtTokenProcess jwtTokenProcess)
         {
             _userHub = userHub;
             _logger = logger;
             _friendAction = friendAction;
+            _jwtTokenProcess = jwtTokenProcess;
         }
 
         // Получение токена из заголовка авторизации
@@ -73,6 +77,18 @@ namespace Quantum.Controllers
             await _friendAction.AddFriendInContact(phoneNumber, jwtToken);
             return Ok("Пользователь добавлен в друзья");
 
+        }
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("info")]
+        
+        public ActionResult<List<UsersOpenData>> GetInfoUser(string jwtToken)
+        {
+            List<UsersOpenData> userData = _jwtTokenProcess.GetUserInfo("Bearer " + jwtToken);
+            if (userData.IsNullOrEmpty())
+            {
+                return NotFound();
+            }
+            return Ok(userData);
         }
     }
 }
