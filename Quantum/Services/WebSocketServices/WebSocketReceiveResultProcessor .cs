@@ -1,14 +1,16 @@
 ﻿using System.Buffers;
 using System.Net.WebSockets;
+using System.Runtime.InteropServices;
 
 namespace Quantum.Services.WebSocketServices
 {
     sealed class WebSocketReceiveResultProcessor : IDisposable
     {
-        //Начальные данные узла
+        // Начальные данные узла
         Chunk<byte> startChunk = null;
-        //Текущие данные узла
+        // Текущие данные узла
         Chunk<byte> currentChunk = null;
+        // Индикатор использования пула массивов
         private readonly bool _isUsingArrayPool;
 
         public WebSocketReceiveResultProcessor(bool isUsingArrayPool)
@@ -67,7 +69,29 @@ namespace Quantum.Services.WebSocketServices
         }
         public void Dispose()
         {
-            throw new NotImplementedException();
+            if (!_isUsingArrayPool)
+            {
+                return;
+            }
+            //Если используется пул массивов
+            if (_isUsingArrayPool)
+            {
+                Chunk<byte> chunk = startChunk;
+                // Обходим все узлы связанного списка блоков в памяти
+                while (chunk != null)
+                {
+                    // Получаем массив байтов из памяти узла, если удается, то segment содержит эту информацию
+                    // Предпринимается попытка получить сегмент массива из внутреннего буфера памяти с доступом только для чтения,
+                    // возвращаемое значение указывает на успешное выполнение операции.
+                    if (MemoryMarshal.TryGetArray(chunk.Memory, out ArraySegment<byte> segment))
+                    {
+                        // Если получилось, то массив возвращаем в пул массивов.                      
+                        ArrayPool<byte>.Shared.Return(segment.Array!);
+                    }    
+                    // Следующий узел в связанном списке блоков в памяти
+                    chunk = (Chunk<byte>)chunk.Next!;
+                }
+            }
         }
     }
 }
