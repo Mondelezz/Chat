@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Quantum.Interfaces.UserInterface;
 using Quantum.Interfaces.WebSocketInterface;
 using Quantum.Services;
+using System.Buffers;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -126,10 +127,6 @@ namespace Quantum.Controllers
             while (webSocket.State == WebSocketState.Open)
             {
                 ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[8192]);
-                if (buffers.Count == 0)
-                {
-                    throw new Exception("Пустая строка");
-                }
                 WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
                 if (receiveResult.Count > 4096)
                 {
@@ -148,6 +145,7 @@ namespace Quantum.Controllers
             }
            
         }
+
         /// <summary>
         /// Процесс отправки сообщения пользователю, а также обеспечение закрытие соединения при изменении данных пользователя и отмену отправки сообщения
         /// </summary>

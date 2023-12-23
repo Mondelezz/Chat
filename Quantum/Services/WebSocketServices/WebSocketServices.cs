@@ -3,6 +3,7 @@ using Quantum.Data;
 using Quantum.Interfaces.WebSocketInterface;
 using Quantum.Models;
 using Quantum.Models.DTO;
+using System.Buffers;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -58,7 +59,7 @@ namespace Quantum.Services.WebSocketServices
                 return false;
             }
 
-        }
+        }       
 
         public async Task SaveMessageInDataBaseAsync(User userSender, User userReceiver, byte[] messageBytes)
         {
