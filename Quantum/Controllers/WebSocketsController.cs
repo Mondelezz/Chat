@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-//using Microsoft.Bot.Streaming.Transport.WebSockets;
 using Quantum.Interfaces.UserInterface;
 using Quantum.Interfaces.WebSocketInterface;
 using Quantum.Services;
+using Quantum.Services.WebSocketServices;
+using System;
 using System.Buffers;
 using System.Net.WebSockets;
 using System.Text;
@@ -20,7 +21,12 @@ namespace Quantum.Controllers
         private readonly ILogger<WebSocketsController> _logger;
         private readonly JwtTokenProcess _jwtTokenProcess;
         private readonly ICheckingDataChange _checkingDataChange;
-        public WebSocketsController(ILogger<WebSocketsController> logger, IWebSocket webSocket, JwtTokenProcess jwtTokenProcess, IWebSocketToClient webSocketToClient, ICheckingDataChange checkingDataChange)
+        public WebSocketsController(
+            ILogger<WebSocketsController> logger,
+            IWebSocket webSocket,
+            JwtTokenProcess jwtTokenProcess,
+            IWebSocketToClient webSocketToClient,
+            ICheckingDataChange checkingDataChange)
         {
             _logger = logger;
             _webSocket = webSocket;
@@ -48,7 +54,7 @@ namespace Quantum.Controllers
                 string senderPhoneNumber = GetSenderPhoneNumber(token);
 
                 Dictionary<string, List<WebSocket>> phoneToWebSockets = _webSocketToClient.AddWebSocketToClient(webSocket, senderPhoneNumber);
-
+                
                 await ProcessWebSocketMessages(webSocket, senderPhoneNumber, token, phoneToWebSockets);
 
             }
@@ -119,25 +125,58 @@ namespace Quantum.Controllers
         /// <param name="phoneToWebSockets"></param>
         /// Словарь номеров телефонов и их сокет соединений
         /// <returns></returns>
-        private async Task ProcessWebSocketMessages(WebSocket webSocket, string senderPhoneNumber, string token, Dictionary<string, List<WebSocket>> phoneToWebSockets)
+        private async Task ProcessWebSocketMessages(
+            WebSocket webSocket,           
+            string senderPhoneNumber,
+            string token,
+            Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
             // Получатель
-            string receiverPhoneNumber = GetReceivePhoneNumber();
-
+            string receiverPhoneNumber = GetReceivePhoneNumber();            
             while (webSocket.State == WebSocketState.Open)
             {
-                ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[8192]);
-                WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
-                if (receiveResult.Count > 4096)
+                
+                ArraySegment<byte> buffers = new ArraySegment<byte>(ArrayPool<byte>.Shared.Rent(500));
+                _logger.Log(LogLevel.Information, $"{buffers.Count()}");
+                try
                 {
-                    ArraySegment<byte> buffers_2 = new ArraySegment<byte>(buffers.Array, buffers.Offset, 4096);
-                    buffers = buffers.Skip(4096).ToArray();
-
-                    if (receiveResult.MessageType == WebSocketMessageType.Text && receiveResult.EndOfMessage)
+                    WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
+                    _logger.Log(LogLevel.Information, $"{receiveResult.Count}");
+                    if (buffers.Count > 4096)
                     {
-                        await ProcessTextMessage(webSocket, senderPhoneNumber, receiverPhoneNumber, buffers_2, receiveResult, token, phoneToWebSockets);
+                        WebSocketReceiveResultProcessor resultProcessor = new WebSocketReceiveResultProcessor();
+                        bool isEndOfMessage = resultProcessor.Receive(receiveResult, buffers, out var frame);
+                        if (isEndOfMessage)
+                        {
+                            if (frame.IsEmpty == true)
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                _logger.Log(LogLevel.Information, $"{frame}");
+                                await ProcessTextMessage(webSocket, frame, senderPhoneNumber, receiverPhoneNumber, buffers, receiveResult, token, phoneToWebSockets);
+                            }
+                        }
                     }
-                }             
+                    else
+                    {
+                        _logger.Log(LogLevel.Information, "Написать код для отправки сообщения 1 сегментом.");
+                    }
+                }
+                catch (WebSocketException ex)
+                {
+                    _logger.LogError(ex, ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogCritical(ex, ex.Message);
+                    return;
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffers.Array!);                 
+                }                                       
             }
             if (webSocket.State == WebSocketState.CloseSent)
             {
@@ -164,7 +203,7 @@ namespace Quantum.Controllers
         /// <param name="phoneToWebSockets"></param>
         /// Словарь номеров телефонов и их сокет соединений
         /// <returns></returns>
-        private async Task ProcessTextMessage(WebSocket webSocket, string senderPhoneNumber, string receiverPhoneNumber, ArraySegment<byte> buffers, WebSocketReceiveResult receiveResult, string token, Dictionary<string, List<WebSocket>> phoneToWebSockets)
+        private async Task ProcessTextMessage(WebSocket webSocket, ReadOnlySequence<byte> frame, string senderPhoneNumber, string receiverPhoneNumber, ArraySegment<byte> buffers, WebSocketReceiveResult receiveResult, string token, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
             bool result = await _checkingDataChange.CheckingDataChangeAsync(token, senderPhoneNumber);
             if (result)

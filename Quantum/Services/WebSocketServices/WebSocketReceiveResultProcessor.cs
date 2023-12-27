@@ -1,21 +1,22 @@
-﻿using System.Buffers;
+﻿using Quantum.Interfaces.WebSocketInterface;
+using System.Buffers;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 
 namespace Quantum.Services.WebSocketServices
 {
-    sealed class WebSocketReceiveResultProcessor : IDisposable
+    public class WebSocketReceiveResultProcessor : IDisposable, IWebSocketProcessor
     {
         // Начальные данные узла
         Chunk<byte> startChunk = null;
         // Текущие данные узла
         Chunk<byte> currentChunk = null;
         // Индикатор использования пула массивов
-        private readonly bool _isUsingArrayPool;
+        private bool _isUsingArrayPool;
 
-        public WebSocketReceiveResultProcessor(bool isUsingArrayPool)
+        public WebSocketReceiveResultProcessor()
         {
-            _isUsingArrayPool = isUsingArrayPool;
+            _isUsingArrayPool = true;
         }
         public bool Receive(WebSocketReceiveResult result, ArraySegment<byte> buffer, out ReadOnlySequence<byte> frame)
         {
@@ -50,7 +51,7 @@ namespace Quantum.Services.WebSocketServices
                 }
                 else
                 {
-                    // Если последний сегмент сущетсвует, то создаем последовательность начиная с первого сегмента, до последнего
+                    // Если последний сегмент существует, то создаем последовательность начиная с первого сегмента, до последнего
                     frame = new ReadOnlySequence<byte>(
                         startSegment: startChunk,
                         startIndex: 0,
@@ -74,23 +75,20 @@ namespace Quantum.Services.WebSocketServices
                 return;
             }
             //Если используется пул массивов
-            if (_isUsingArrayPool)
+            Chunk<byte> chunk = startChunk;
+            // Обходим все узлы связанного списка блоков в памяти
+            while (chunk != null)
             {
-                Chunk<byte> chunk = startChunk;
-                // Обходим все узлы связанного списка блоков в памяти
-                while (chunk != null)
+                // Получаем массив байтов из памяти узла, если удается, то segment содержит эту информацию
+                // Предпринимается попытка получить сегмент массива из внутреннего буфера памяти с доступом только для чтения,
+                // возвращаемое значение указывает на успешное выполнение операции.
+                if (MemoryMarshal.TryGetArray(chunk.Memory, out ArraySegment<byte> segment))
                 {
-                    // Получаем массив байтов из памяти узла, если удается, то segment содержит эту информацию
-                    // Предпринимается попытка получить сегмент массива из внутреннего буфера памяти с доступом только для чтения,
-                    // возвращаемое значение указывает на успешное выполнение операции.
-                    if (MemoryMarshal.TryGetArray(chunk.Memory, out ArraySegment<byte> segment))
-                    {
-                        // Если получилось, то массив возвращаем в пул массивов.                      
-                        ArrayPool<byte>.Shared.Return(segment.Array!);
-                    }    
-                    // Следующий узел в связанном списке блоков в памяти
-                    chunk = (Chunk<byte>)chunk.Next!;
+                    // Если получилось, то массив возвращаем в пул массивов.                      
+                    ArrayPool<byte>.Shared.Return(segment.Array!);
                 }
+                // Следующий узел в связанном списке блоков в памяти
+                chunk = (Chunk<byte>)chunk.Next!;
             }
         }
     }

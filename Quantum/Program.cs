@@ -22,6 +22,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddAutoMapper(typeof(AppMappingProfile));
 builder.Services.AddSingleton<IWebSocketToClient, PhoneToSocketConnectionService>();
+builder.Services.AddSingleton<WebSocketReceiveResultProcessor>();
+builder.Services.AddSingleton<IWebSocketProcessor, WebSocketReceiveResultProcessor>();
 builder.Services.AddScoped<IWebSocket, WebSocketServices>();
 builder.Services.AddScoped<IUserHub, UserHubService>();
 builder.Services.AddScoped<IJwtTokenProcess, JwtTokenProcess>();
