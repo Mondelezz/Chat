@@ -136,13 +136,13 @@ namespace Quantum.Controllers
             while (webSocket.State == WebSocketState.Open)
             {
                 
-                ArraySegment<byte> buffers = new ArraySegment<byte>(ArrayPool<byte>.Shared.Rent(500));
-                _logger.Log(LogLevel.Information, $"{buffers.Count()}");
+                ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[4096]);
+                _logger.Log(LogLevel.Information, $"buffers: {buffers.Count()}");
                 try
                 {
                     WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
-                    _logger.Log(LogLevel.Information, $"{receiveResult.Count}");
-                    if (buffers.Count > 4096)
+                    _logger.Log(LogLevel.Information, $"receiveResult: {receiveResult.Count}");
+                    if (receiveResult.Count >= 2000)
                     {
                         WebSocketReceiveResultProcessor resultProcessor = new WebSocketReceiveResultProcessor();
                         bool isEndOfMessage = resultProcessor.Receive(receiveResult, buffers, out var frame);
@@ -156,6 +156,7 @@ namespace Quantum.Controllers
                             {
                                 _logger.Log(LogLevel.Information, $"{frame}");
                                 await ProcessTextMessage(webSocket, frame, senderPhoneNumber, receiverPhoneNumber, buffers, receiveResult, token, phoneToWebSockets);
+                                resultProcessor.Dispose();
                             }
                         }
                     }
@@ -212,9 +213,8 @@ namespace Quantum.Controllers
             }
             else
             {
-                byte[] receivedBuffers = buffers.Skip(count: buffers.Offset)
-                                                .Take(count: receiveResult.Count)
-                                                .ToArray();
+
+              byte[] receivedBuffers = frame.ToArray();
 
               bool resultSendMessage =  await _webSocket.SendMessageToUserAsync(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
                if (resultSendMessage)

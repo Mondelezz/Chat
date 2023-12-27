@@ -41,8 +41,9 @@ namespace Quantum.Services.WebSocketServices
                 currentChunk = currentChunk.Add(slice);
             }
             // Сообщение завершено и начальный узел не null
-            if (result.EndOfMessage && startChunk != null)
+            if (!result.EndOfMessage && startChunk != null)
             {
+               
                 // Если следующего сегмента не существует, то:
                 if (startChunk.Next == null)
                 {
@@ -68,6 +69,7 @@ namespace Quantum.Services.WebSocketServices
                 return false;
             }
         }
+
         public void Dispose()
         {
             if (!_isUsingArrayPool)
