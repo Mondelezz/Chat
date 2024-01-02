@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Quantum.Services.WebSocketServices
 {
@@ -13,10 +14,12 @@ namespace Quantum.Services.WebSocketServices
         Chunk<byte> currentChunk = null;
         // Индикатор использования пула массивов
         private bool _isUsingArrayPool;
+        private readonly ILogger<WebSocketReceiveResultProcessor> _logger;
 
-        public WebSocketReceiveResultProcessor()
+        public WebSocketReceiveResultProcessor(ILogger<WebSocketReceiveResultProcessor> logger)
         {
             _isUsingArrayPool = true;
+            _logger = logger;
         }
         public bool Receive(WebSocketReceiveResult result, ArraySegment<byte> buffer, out ReadOnlySequence<byte> frame)
         {
@@ -26,9 +29,11 @@ namespace Quantum.Services.WebSocketServices
                 return false;
             }
             //  Формируем срез из текущего буффера данных, начиная с индекса 0, до длины result
+            // ToArray Копирует содержимое из памяти в новый массив.
             ArraySegment<byte> slice = _isUsingArrayPool
-                ? buffer.Slice(index: 0, count: result.Count) // Используем Slice, если используется пул массивов, представляет ArraySegment<byte>
-                : buffer.Slice(index: 0, count: result.Count).ToArray(); // Используем ToArray, если не используется пул массивов, представляет byte[]
+                ? buffer.Slice(index: 0, result.Count) // Используем Slice, если используется пул массивов, представляет ArraySegment<byte>
+                : buffer.Slice(index: 0, result.Count).ToArray(); // Используем ToArray, если не используется пул массивов, представляет byte[]
+            _logger.Log(LogLevel.Information, $"Received frame: {Encoding.UTF8.GetString(slice.ToArray(), 0, result.Count)}");
 
             if (startChunk == null)
             {
@@ -40,7 +45,7 @@ namespace Quantum.Services.WebSocketServices
                 // Если startChunk уже инициализирован, создаем новый сегмент с данными из slice, теперь указывать будет на новый сегмент
                 currentChunk = currentChunk.Add(slice);
             }
-            // Сообщение завершено и начальный узел не null
+            // Сообщение не завершено и начальный узел не null
             if (!result.EndOfMessage && startChunk != null)
             {
                
@@ -60,7 +65,6 @@ namespace Quantum.Services.WebSocketServices
                         endIndex: currentChunk.Memory.Length);
                 }
                 // Сброс, чтобы мы могли принимать новые фрагменты с нуля
-                startChunk = currentChunk = null; 
                 return true;
             }
             else

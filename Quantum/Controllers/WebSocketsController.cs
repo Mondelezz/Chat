@@ -9,6 +9,7 @@ using System;
 using System.Buffers;
 using System.Net.WebSockets;
 using System.Text;
+using System.Threading.Channels;
 
 namespace Quantum.Controllers
 {
@@ -19,16 +20,19 @@ namespace Quantum.Controllers
         private readonly IWebSocket _webSocket;
         private readonly IWebSocketToClient _webSocketToClient;
         private readonly ILogger<WebSocketsController> _logger;
+        private readonly ILogger<WebSocketReceiveResultProcessor> _logger2;
         private readonly JwtTokenProcess _jwtTokenProcess;
         private readonly ICheckingDataChange _checkingDataChange;
         public WebSocketsController(
             ILogger<WebSocketsController> logger,
+            ILogger<WebSocketReceiveResultProcessor> logger2,
             IWebSocket webSocket,
             JwtTokenProcess jwtTokenProcess,
             IWebSocketToClient webSocketToClient,
             ICheckingDataChange checkingDataChange)
         {
             _logger = logger;
+            _logger2= logger2;
             _webSocket = webSocket;
             _jwtTokenProcess = jwtTokenProcess;
             _webSocketToClient = webSocketToClient;
@@ -132,19 +136,28 @@ namespace Quantum.Controllers
             Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
             // Получатель
-            string receiverPhoneNumber = GetReceivePhoneNumber();            
+            string receiverPhoneNumber = GetReceivePhoneNumber();
             while (webSocket.State == WebSocketState.Open)
             {
-                
-                ArraySegment<byte> buffers = new ArraySegment<byte>(new byte[8192]);
-                _logger.Log(LogLevel.Information, $"buffers: {buffers.Count()}");
+                //Channel<byte[]> channel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(100)
+                //{
+                //    FullMode = BoundedChannelFullMode.DropOldest
+                //});
+                byte[] memory = new byte[4096];
+                ArraySegment<byte> buffer = new ArraySegment<byte>(memory);
+                _logger.Log(LogLevel.Information, $"buffers: {buffer}");
                 try
                 {
-                    WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffers, CancellationToken.None);
+                    WebSocketReceiveResult receiveResult = await webSocket.ReceiveAsync(buffer, CancellationToken.None);
+                    if (receiveResult.Count == 0)
+                    {
+                        _logger.Log(LogLevel.Warning, "\nreceiveResult ПУСТ\n");
+                        await _webSocketToClient.CloseWebSocketConnectionAsync(webSocket, senderPhoneNumber);
+                    }
                     _logger.Log(LogLevel.Information, $"receiveResult: {receiveResult.Count}");
 
-                    WebSocketReceiveResultProcessor resultProcessor = new WebSocketReceiveResultProcessor();
-                    bool isEndOfMessage = resultProcessor.Receive(receiveResult, buffers, out var frame);
+                    WebSocketReceiveResultProcessor resultProcessor = new WebSocketReceiveResultProcessor(_logger2);
+                    bool isEndOfMessage = resultProcessor.Receive(receiveResult, buffer, out var frame);
                     if (isEndOfMessage)
                     {
                         if (frame.IsEmpty == true)
@@ -154,10 +167,13 @@ namespace Quantum.Controllers
                         else
                         {
                             _logger.Log(LogLevel.Information, $"{frame}");
-                            await ProcessTextMessage(webSocket, frame, senderPhoneNumber, receiverPhoneNumber, buffers, receiveResult, token, phoneToWebSockets);                          
+                            await ProcessTextMessage(webSocket, frame, senderPhoneNumber, receiverPhoneNumber, token, phoneToWebSockets);
                         }
                     }
-
+                    else
+                    {
+                        await ProcessSingleTextMessage(webSocket, senderPhoneNumber, buffer, receiveResult, receiverPhoneNumber, token, phoneToWebSockets);
+                    }
                 }
                 catch (WebSocketException ex)
                 {
@@ -170,10 +186,11 @@ namespace Quantum.Controllers
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(buffers.Array!);  
-                    
-                }                                       
-            }
+                    ArrayPool<byte>.Shared.Return(buffer.ToArray()!);
+
+                }
+            
+        }                 
             if (webSocket.State == WebSocketState.CloseSent)
             {
                 _logger.Log(LogLevel.Information, $"Соединение закрыто успешно.\n");
@@ -199,10 +216,13 @@ namespace Quantum.Controllers
         /// <param name="phoneToWebSockets"></param>
         /// Словарь номеров телефонов и их сокет соединений
         /// <returns></returns>
-        private async Task ProcessTextMessage(WebSocket webSocket, ReadOnlySequence<byte> frame, string senderPhoneNumber, string receiverPhoneNumber, ArraySegment<byte> buffers, WebSocketReceiveResult receiveResult, string token, Dictionary<string, List<WebSocket>> phoneToWebSockets)
+        private async Task ProcessTextMessage(WebSocket webSocket, ReadOnlySequence<byte> frame, string senderPhoneNumber, string receiverPhoneNumber,  string token, Dictionary<string, List<WebSocket>> phoneToWebSockets)
         {
             foreach (var segment in frame)
             {
+                Console.WriteLine("\n\n------------------------------");
+                Console.WriteLine(segment);
+                Console.WriteLine("------------------------------\n\n");
                 bool result = await _checkingDataChange.CheckingDataChangeAsync(token, senderPhoneNumber);
                 if (result)
                 {
@@ -228,6 +248,33 @@ namespace Quantum.Controllers
             }
             
         }
+        private async Task ProcessSingleTextMessage(WebSocket webSocket, string senderPhoneNumber, ArraySegment<byte> buffers, WebSocketReceiveResult receiveResult, string receiverPhoneNumber, string token, Dictionary<string, List<WebSocket>> phoneToWebSockets)
+        {
+            bool result = await _checkingDataChange.CheckingDataChangeAsync(token, senderPhoneNumber);
+            if (result)
+            {
+                await _webSocketToClient.CloseWebSocketConnectionAsync(webSocket, senderPhoneNumber);
+            }
+            else
+            {
 
+                byte[] receivedBuffers = buffers.Skip(count: buffers.Offset)
+                                               .Take(count: receiveResult.Count)
+                                               .ToArray();
+
+                bool resultSendMessage = await _webSocket.SendMessageToUserAsync(senderPhoneNumber, receiverPhoneNumber, receivedBuffers, phoneToWebSockets);
+                if (resultSendMessage)
+                {
+                    _logger.Log(LogLevel.Information, $"Сообщение отправлено успешно.\n\t{senderPhoneNumber}: {Encoding.UTF8.GetString(receivedBuffers)}\n");
+                }
+                else
+                {
+                    _logger.Log(LogLevel.Warning, $"Получателя нет, отправить некому.");
+
+                    await _webSocketToClient.CloseWebSocketConnectionAsync(webSocket, senderPhoneNumber);
+                }
+            }
+
+        }
     }
 }
