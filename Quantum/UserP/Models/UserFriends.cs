@@ -1,4 +1,4 @@
-﻿using Quantum.Models;
+﻿using Quantum.UserP.Models;
 
 public class UserFriends
 {

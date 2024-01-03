@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using Quantum.Interfaces.UserInterface;
-using Quantum.Models;
 using Quantum.Models.DTO;
 using Quantum.Services;
+using Quantum.UserP.Models;
+using Quantum.UserP.UserInterface;
 
 namespace Quantum.Controllers
 {
@@ -56,7 +56,7 @@ namespace Quantum.Controllers
         }
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut("upInfo")]
-        public async Task<ActionResult> UpdateUserInformation([FromBody] UsersOpenData updateInfo)
+        public async Task<ActionResult> UpdateUserInformation([FromBody] UserOpenData updateInfo)
         {
             try
             {
@@ -81,9 +81,9 @@ namespace Quantum.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("info")]
         
-        public ActionResult<List<UsersOpenData>> GetInfoUser(string jwtToken)
+        public ActionResult<List<UserOpenData>> GetInfoUser(string jwtToken)
         {
-            List<UsersOpenData> userData = _jwtTokenProcess.GetUserInfo("Bearer " + jwtToken);
+            List<UserOpenData> userData = _jwtTokenProcess.GetUserInfo("Bearer " + jwtToken);
             if (userData.IsNullOrEmpty())
             {
                 return NotFound();

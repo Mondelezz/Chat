@@ -1,16 +1,17 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Quantum.Data;
-using Quantum.Interfaces.UserInterface;
-using Quantum.Models;
+using Quantum.Services;
+using Quantum.UserP.Models;
+using Quantum.UserP.UserInterface;
 
-namespace Quantum.Services.UserServices
+namespace Quantum.UserP.UserServices
 {
     public class CheckingDataChangeService : ICheckingDataChange
     {
         private readonly JwtTokenProcess _jwtTokenProcess;
         private readonly ILogger<CheckingDataChangeService> _logger;
         private readonly DataContext _dataContext;
-        public CheckingDataChangeService(JwtTokenProcess jwtTokenProcess, ILogger<CheckingDataChangeService> logger , DataContext dataContext)
+        public CheckingDataChangeService(JwtTokenProcess jwtTokenProcess, ILogger<CheckingDataChangeService> logger, DataContext dataContext)
         {
             _jwtTokenProcess = jwtTokenProcess;
             _logger = logger;
@@ -21,7 +22,7 @@ namespace Quantum.Services.UserServices
         public async Task<bool> CheckingDataChangeAsync(string authToken, string senderPhoneNumber)
         {
             try
-            {               
+            {
 
                 Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(authToken);
 
@@ -39,14 +40,14 @@ namespace Quantum.Services.UserServices
                     _logger.Log(LogLevel.Warning, "Данные не соответствуют, либо пользователя не существует\n\tРазрываю веб-сокет соединение.\n");
                     return true;
                 }
-                
+
             }
             catch (Exception ex)
             {
                 _logger.Log(LogLevel.Error, $"Ошибка работы сервера: {ex.Message}\n");
                 throw;
             }
-            
+
         }
     }
 }

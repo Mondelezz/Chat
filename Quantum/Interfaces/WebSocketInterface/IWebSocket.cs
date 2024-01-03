@@ -1,4 +1,4 @@
-﻿using Quantum.Models;
+﻿using Quantum.UserP.Models;
 using System.Net.WebSockets;
 
 namespace Quantum.Interfaces.WebSocketInterface

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Quantum.Models
-{   
+namespace Quantum.UserP.Models
+{
     /// <summary>
     /// Модель пользователя
     /// </summary>

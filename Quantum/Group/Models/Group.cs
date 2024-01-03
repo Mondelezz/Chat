@@ -1,4 +1,6 @@
-﻿namespace Quantum.Models
+﻿using Quantum.UserP.Models;
+
+namespace Quantum.Group.Models
 {
     public class Group
     {
@@ -7,7 +9,7 @@
         public List<UserInfoOutput> Users { get; set; } = new List<UserInfoOutput>();
         public UserInfoOutput User { get; set; } = new UserInfoOutput();
         public Guid UserId { get; set; }
-     
+
 
     }
 }

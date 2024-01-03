@@ -12,7 +12,6 @@
     <PackageReference Include="BCrypt.Net" Version="0.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
     <PackageReference Include="Microsoft.Bot.Streaming" Version="4.21.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.13" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.13">

@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Quantum.Models;
 using Quantum.Models.DTO;
+using Quantum.UserP.Models;
 
 namespace Quantum.Data
 {

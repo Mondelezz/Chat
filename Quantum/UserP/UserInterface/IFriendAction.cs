@@ -1,6 +1,6 @@
-﻿using Quantum.Models;
+﻿using Quantum.UserP.Models;
 
-namespace Quantum.Interfaces.UserInterface
+namespace Quantum.UserP.UserInterface
 {
     public interface IFriendAction
     {

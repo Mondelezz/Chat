@@ -1,8 +1,6 @@
 using Quantum.Mapping;
 using Quantum.Interfaces;
 using Quantum.Services;
-using Quantum.Interfaces.UserInterface;
-using Quantum.Services.UserServices;
 using Quantum.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -10,9 +8,10 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Quantum.Options;
+using Quantum.UserP.UserServices;
+using Quantum.UserP.UserInterface;
 using Quantum.Services.WebSocketServices;
 using Quantum.Interfaces.WebSocketInterface;
-
 
 var builder = WebApplication.CreateBuilder(args);
 

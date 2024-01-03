@@ -1,5 +1,5 @@
 ﻿using Quantum.Interfaces;
-using Quantum.Models;
+using Quantum.UserP.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -70,7 +70,7 @@ namespace Quantum.Services
                 return Guid.Empty;
             }
         }
-        public List<UsersOpenData> GetUserInfo(string authHeaderValue)
+        public List<UserOpenData> GetUserInfo(string authHeaderValue)
         {
             JwtSecurityToken jwtSecurityToken = GetJwtToken(authHeaderValue);
             Claim? phoneNumberClaim = jwtSecurityToken?.Claims.First(claim => claim.Type == "PhoneNumber");
@@ -78,7 +78,7 @@ namespace Quantum.Services
            
             if (phoneNumberClaim != null && userNameClaim != null)
             {
-                UsersOpenData userData = new UsersOpenData()
+                UserOpenData userData = new UserOpenData()
                 {
                     PhoneNumber = phoneNumberClaim.Value,
                     UserName = userNameClaim.Value
@@ -87,7 +87,7 @@ namespace Quantum.Services
                 _logger.LogInformation($"Полученный номер телефона из jwtToken: {phoneNumberClaim.Value}\n");
                 _logger.LogInformation($"Полученное имя из jwtToken: {userNameClaim.Value}\n");
 
-                List<UsersOpenData> userInfo = new List<UsersOpenData>
+                List<UserOpenData> userInfo = new List<UserOpenData>
                 {
                     userData
                 };

@@ -1,4 +1,5 @@
 ﻿using Quantum.Interfaces.WebSocketInterface;
+using Quantum.Services.WebSocketServices;
 using System.Buffers;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
@@ -38,7 +39,7 @@ namespace Quantum.Services.WebSocketServices
             if (startChunk == null)
             {
                 // Создаём новый объект Chunk и присваиваем этот объект начальному узлу startChunk и текущему узлу currentChunk
-                startChunk = currentChunk = new Chunk<byte>(slice);          
+                startChunk = currentChunk = new Chunk<byte>(slice);
             }
             else
             {
@@ -48,7 +49,7 @@ namespace Quantum.Services.WebSocketServices
             // Сообщение не завершено и начальный узел не null
             if (!result.EndOfMessage && startChunk != null)
             {
-               
+
                 // Если следующего сегмента не существует, то:
                 if (startChunk.Next == null)
                 {

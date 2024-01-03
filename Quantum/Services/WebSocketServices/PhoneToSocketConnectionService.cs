@@ -48,7 +48,7 @@ namespace Quantum.Services.WebSocketServices
                 // Гарантируется, что вызываемый объект выходит из режима записи
                 Locker.ExitWriteLock();
             }
-        }   
+        }
         public async Task CloseWebSocketConnectionAsync(WebSocket webSocket, string senderPhoneNumber)
         {
             try
@@ -62,7 +62,7 @@ namespace Quantum.Services.WebSocketServices
                         cancellationToken: CancellationToken.None);
 
                     _logger.Log(LogLevel.Information, $"Соединение по номеру: {phoneNumber} закрыто. \n");
-          
+
                     foreach (string item in PhoneToWebSockets.Keys.ToList())
                     {
                         if (item.Equals(phoneNumber))
@@ -82,7 +82,7 @@ namespace Quantum.Services.WebSocketServices
                 _logger.Log(LogLevel.Error, $"Ошибка сервера: {ex.Message} \n");
                 throw;
             }
-            
+
         }
     }
 }

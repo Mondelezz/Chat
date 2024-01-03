@@ -1,11 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Quantum.Data;
-using Quantum.Interfaces.UserInterface;
-using Quantum.Models;
 using Quantum.Models.DTO;
+using Quantum.Services;
+using Quantum.UserP.Models;
+using Quantum.UserP.UserInterface;
 
-namespace Quantum.Services.UserServices
+namespace Quantum.UserP.UserServices
 {
     public class UserHubService : IUserHub
     {
@@ -40,27 +41,27 @@ namespace Quantum.Services.UserServices
         }
         [Authorize(AuthenticationSchemes = "Bearer")]
         [Authorize]
-        public async Task<UserInfoOutput> UserUpdateInfoAsync(UsersOpenData updateInfo, string token)
-        {            
-                Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(token);
-                User user = _dataContext.Users.First(id => id.UserId == userId);
+        public async Task<UserInfoOutput> UserUpdateInfoAsync(UserOpenData updateInfo, string token)
+        {
+            Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(token);
+            User user = _dataContext.Users.First(id => id.UserId == userId);
 
-                user.UserName = updateInfo.UserName;
-                user.PhoneNumber = updateInfo.PhoneNumber;
-                _dataContext.Users.Update(user);
-                await _dataContext.SaveChangesAsync();
+            user.UserName = updateInfo.UserName;
+            user.PhoneNumber = updateInfo.PhoneNumber;
+            _dataContext.Users.Update(user);
+            await _dataContext.SaveChangesAsync();
 
-                _logger.Log(LogLevel.Information, $"Данные успешно обновлены.\n\t" +
-                    $"{user.UserName},\n" +
-                    $"\t{user.PhoneNumber}\n");
+            _logger.Log(LogLevel.Information, $"Данные успешно обновлены.\n\t" +
+                $"{user.UserName},\n" +
+                $"\t{user.PhoneNumber}\n");
 
-                UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
-                return userInfoOutput;
-           
+            UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
+            return userInfoOutput;
+
         }
         private string GetHashPasswrod(string password, string confirmPasswrod)
         {
-            
+
             bool isValid = password.Equals(confirmPasswrod);
             if (isValid)
             {
@@ -68,18 +69,18 @@ namespace Quantum.Services.UserServices
                 _logger.Log(LogLevel.Information, $"Был получен hashPassword: {hashPassword}");
 
                 return hashPassword;
-                
+
             }
             throw new Exception("Пароли не совпадают");
         }
 
         private async Task AddUserToDatabaseAsync(RegistrationUserDTO registrationUserDTO)
-        {           
+        {
             bool result = CheckPhoneNumberInDb(registrationUserDTO.PhoneNumber);
             if (!result)
             {
                 _logger.Log(LogLevel.Warning, "Введены данные уже существующего пользователя.");
-                throw new Exception("Номер телефона занят");               
+                throw new Exception("Номер телефона занят");
             }
             User user = _mapper.Map<User>(registrationUserDTO);
             user.UserId = Guid.NewGuid();

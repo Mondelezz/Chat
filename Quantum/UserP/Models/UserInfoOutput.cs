@@ -1,5 +1,4 @@
-﻿
-namespace Quantum.Models
+﻿namespace Quantum.UserP.Models
 {
     public class UserInfoOutput
     {

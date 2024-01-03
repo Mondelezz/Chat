@@ -1,4 +1,4 @@
-﻿namespace Quantum.Interfaces.UserInterface
+﻿namespace Quantum.UserP.UserInterface
 {
     public interface ICheckingDataChange
     {

@@ -2,9 +2,9 @@
 using Microsoft.IdentityModel.Tokens;
 using Quantum.Data;
 using Quantum.Interfaces;
-using Quantum.Models;
 using Quantum.Models.DTO;
 using Quantum.Options;
+using Quantum.UserP.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using BCryptNet = BCrypt.Net.BCrypt;

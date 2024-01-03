@@ -1,10 +1,11 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Quantum.Data;
-using Quantum.Interfaces.UserInterface;
-using Quantum.Models;
+using Quantum.Services;
+using Quantum.UserP.Models;
+using Quantum.UserP.UserInterface;
 
-namespace Quantum.Services.UserServices
+namespace Quantum.UserP.UserServices
 {
     public class ContactFriendlyService : IFriendAction
     {
@@ -28,7 +29,7 @@ namespace Quantum.Services.UserServices
         /// </param>
         public async Task<UserInfoOutput> SearchUser(string phoneNumber)
         {
-            
+
             User? userReceiver = await _dataContext.Users.FirstOrDefaultAsync(pN => pN.PhoneNumber == phoneNumber);
             if (userReceiver != null)
             {
@@ -36,7 +37,7 @@ namespace Quantum.Services.UserServices
                 UserInfoOutput userReceiverMapper = _mapper.Map<UserInfoOutput>(userReceiver);
                 return userReceiverMapper;
             }
-            throw new Exception("Пользователь не найден");      
+            throw new Exception("Пользователь не найден");
         }
 
 
@@ -54,7 +55,7 @@ namespace Quantum.Services.UserServices
             UserInfoOutput userReceiver = await SearchUser(phoneNumber);
 
             bool result = await FriendExists(authHeaderValue, userReceiver.UserId);
-            
+
             if (userReceiver == null || result)
             {
                 throw new Exception("Не удалось добавить пользователя в друзья");
@@ -73,10 +74,10 @@ namespace Quantum.Services.UserServices
                 UserId = userId,
                 FriendId = userReceiver.UserId
             };
-                  
+
             DbSet<UserFriends> userFriendsSet = _dataContext.Set<UserFriends>();
-            await userFriendsSet.AddAsync(userFriends); 
-            
+            await userFriendsSet.AddAsync(userFriends);
+
             await _dataContext.SaveChangesAsync();
 
             _logger.Log(LogLevel.Information, $"Пользователь {userReceiver.UserName} добавлен в друзья к пользователю {userSender.UserName}");
