@@ -2,6 +2,6 @@
 {
     public interface ILinkInvitation
     {
-        public string LinkGeneration();
+        public string LinkGeneration(Guid groupId);
     }
 }

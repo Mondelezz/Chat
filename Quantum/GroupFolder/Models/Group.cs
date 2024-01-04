@@ -1,15 +1,16 @@
 ﻿using Quantum.UserP.Models;
+using StackExchange.Redis;
 
-namespace Quantum.Group.Models
+namespace Quantum.GroupFolder.Models
 {
     public class Group
     {
-        public string GroupName { get; set; } = string.Empty;
+        public string NameGroup { get; set; } = string.Empty;
+        public string? DescriptionGroup { get; set; } = string.Empty;
         public Guid GroupId { get; set; }
         public List<UserInfoOutput> Users { get; set; } = new List<UserInfoOutput>();
-        public UserInfoOutput User { get; set; } = new UserInfoOutput();
-        public Guid UserId { get; set; }
-
-
+        public bool StatusAccess { get; set; } = false;
+        public int CountMembers { get; set; } 
+        public string LinkInvitation { get; set; } = string.Empty;
     }
 }

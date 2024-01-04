@@ -1,8 +1,11 @@
-﻿namespace Quantum.GroupFolder.GroupInterface
+﻿using Quantum.GroupFolder.Enums;
+using Quantum.GroupFolder.Models;
+
+namespace Quantum.GroupFolder.GroupInterface
 {
     public interface ICreateGroup
     {
-        public Task CreateGroup(string nameGroup, string descriptionGroup);
-        public Task AddParticipants(Guid authorId, Guid friendId);
+        public Task<Group> CreateGroupAsync(string nameGroup, string? descriptionGroup, AccessGroup access);
+        public Task AddMembersAsync(Guid authorId, Guid friendId);
     }
 }
