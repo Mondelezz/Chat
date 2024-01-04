@@ -1,8 +1,9 @@
 ﻿using Quantum.Data;
+using Quantum.GroupFolder.Enums;
 using Quantum.Group.GroupInterface;
 using System;
 
-namespace Quantum.Services.Group
+namespace Quantum.GroupFolder.Services.Group
 {
     public class GroupService : ICreateGroup, ILinkInvitation
     {
@@ -13,27 +14,20 @@ namespace Quantum.Services.Group
         {
             _dataContext = dataContext;
             _logger = logger;
-        }       
-        // Доступ
-        public enum Access 
-        {
-            Open = 1,
-            Closed = 2 
-        }
-
-        public Task CreateGroup(string nameGroup, string descriptionGroup, Access access)
+        }             
+        public Task CreateGroup(string nameGroup, string descriptionGroup, AccessGroup access)
         {
             Guid groupId = Guid.NewGuid();
             string linkInvitation = LinkGeneration(groupId);
 
             switch (access)
             {
-                case Access.Open:
+                case AccessGroup.Open:
                     {
-                        
+                        Group group = new Group 
                     }
                     break;
-                case Access.Closed:
+                case AccessGroup.Closed:
                     {
                         
                     }

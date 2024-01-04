@@ -1,4 +1,4 @@
-﻿namespace Quantum.Group.GroupInterface
+﻿namespace Quantum.GroupFolder.GroupInterface
 {
     public interface ICreateGroup
     {

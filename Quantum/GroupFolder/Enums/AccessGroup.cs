@@ -1,4 +1,4 @@
-﻿namespace Quantum.Group.Enums
+﻿namespace Quantum.GroupFolder.Enums
 {
     public enum AccessGroup
     {
