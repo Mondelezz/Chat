@@ -5,7 +5,6 @@ namespace Quantum.GroupFolder.Models
 {
     public class Group
     {
-        public int Id { get; set; }
         // Название
         public string NameGroup { get; set; } = string.Empty;
         // Описание
@@ -13,7 +12,7 @@ namespace Quantum.GroupFolder.Models
         // Id
         public Guid GroupId { get; set; }
         // Участники
-        public List<UserInfoOutput> Members { get; set; } = new List<UserInfoOutput>();
+        public ICollection<UserGroups> Members { get; set; } = new List<UserGroups>();
         // Статус доступности(открытая/закрытая) 
         public bool StatusAccess { get; set; } = false;
         // Количество участников

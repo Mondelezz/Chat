@@ -1,4 +1,5 @@
-﻿using Quantum.Data;
+﻿using Microsoft.AspNetCore.Authorization;
+using Quantum.Data;
 using Quantum.GroupFolder.Enums;
 using Quantum.GroupFolder.GroupInterface;
 using Quantum.GroupFolder.Models;
@@ -15,8 +16,11 @@ namespace Quantum.GroupFolder.Services
         {
             _dataContext = dataContext;
             _logger = logger;
-        }             
-        public async Task<Group> CreateGroup(string nameGroup, string descriptionGroup, AccessGroup access)
+        }
+
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [Authorize]
+        public async Task<Group> CreateGroupAsync(string nameGroup, string? descriptionGroup, AccessGroup access)
         {
             Guid groupId = Guid.NewGuid();
             string linkInvitation = LinkGeneration(groupId);
@@ -24,6 +28,9 @@ namespace Quantum.GroupFolder.Services
             {
                 GroupId = groupId,
                 LinkInvitation = linkInvitation,
+                NameGroup = nameGroup,
+                DescriptionGroup = descriptionGroup,
+                CountMembers = 1
             };
             switch (access)
             {
@@ -39,7 +46,7 @@ namespace Quantum.GroupFolder.Services
                     break;
                 default:
                     throw new ArgumentException("Неизвестная ошибка.");
-            }
+            } 
             await SaveInDataBase(group);
             return group;
         }
@@ -56,7 +63,7 @@ namespace Quantum.GroupFolder.Services
             return true;
             
         }
-        public Task AddParticipants(Guid authorId, Guid friendId)
+        public Task AddMembersAsync(Guid authorId, Guid friendId)
         {
             throw new NotImplementedException();
         }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Quantum.GroupFolder.Models;
 using Quantum.Models.DTO;
 using Quantum.UserP.Models;
 
@@ -15,14 +16,18 @@ namespace Quantum.Data
         public DbSet<User> Users { get; set; }
         public DbSet<UserInfoOutput> Friends { get; set; }
         public DbSet<TextMessage> Messages {get;set;}
+        public DbSet<Group> Groups { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<UserInfoOutput>()
-        .       HasKey(u => u.UserId);
+                .HasKey(u => u.UserId);
 
             modelBuilder.Entity<User>()
                 .HasKey(u => u.UserId);
+
+            modelBuilder.Entity<Group>()
+                .HasKey(u => u.GroupId);
 
             modelBuilder.Entity<UserFriends>()
                 .HasOne(u => u.User)
@@ -36,6 +41,19 @@ namespace Quantum.Data
 
             modelBuilder.Entity<UserFriends>()
                 .HasKey(e => new {e.UserId, e.FriendId});
+
+            modelBuilder.Entity<UserGroups>()
+                .HasOne(u => u.User)
+                .WithMany(u => u.Groups)
+                .HasForeignKey(u => u.UserId);
+
+            modelBuilder.Entity<UserGroups>()
+                .HasOne(u => u.Group)
+                .WithMany(u => u.Members)
+                .HasForeignKey(u => u.GroupId);
+
+            modelBuilder.Entity<UserGroups>()
+                .HasKey(e => new { e.UserId, e.GroupId });
         }
     }
 }
