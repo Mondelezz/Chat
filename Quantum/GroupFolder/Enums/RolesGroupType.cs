@@ -1,7 +1,7 @@
 ﻿namespace Quantum.GroupFolder.Enums
 {
     [Flags]
-    public enum RolesGroup
+    public enum RolesGroupType
     {
         Owner = 1,
         Admin = 2,

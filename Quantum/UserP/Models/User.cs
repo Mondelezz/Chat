@@ -16,6 +16,7 @@ namespace Quantum.UserP.Models
         [Phone(ErrorMessage = "Некорректный формат")]
         public string PhoneNumber { get; set; } = string.Empty;
         public string HashPassword { get; set; } = string.Empty;
+        public ICollection<GroupUserRole> Roles { get; set; } = new List<GroupUserRole>();
         public ICollection<UserFriends> Friend { get; set; } = new List<UserFriends>();
         public ICollection<UserGroups> Groups { get; set; } = new List<UserGroups>();
         public DateTime RegistrationDate { get; set; }

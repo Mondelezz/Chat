@@ -17,6 +17,7 @@ namespace Quantum.Data
         public DbSet<UserInfoOutput> Friends { get; set; }
         public DbSet<TextMessage> Messages {get;set;}
         public DbSet<Group> Groups { get; set; }
+        public DbSet<GroupUserRole> GroupUserRole { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -53,6 +54,13 @@ namespace Quantum.Data
                 .HasForeignKey(u => u.GroupId);
 
             modelBuilder.Entity<UserGroups>()
+                .HasKey(e => new { e.UserId, e.GroupId });
+
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Roles)
+                .WithOne()
+                .HasForeignKey(u => u.UserId);
+            modelBuilder.Entity<GroupUserRole>()
                 .HasKey(e => new { e.UserId, e.GroupId });
         }
     }
