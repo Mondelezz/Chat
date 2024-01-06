@@ -12,6 +12,8 @@ using Quantum.UserP.UserServices;
 using Quantum.UserP.UserInterface;
 using Quantum.Services.WebSocketServices;
 using Quantum.Interfaces.WebSocketInterface;
+using Quantum.GroupFolder.GroupInterface;
+using Quantum.GroupFolder.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,9 @@ builder.Services.AddScoped<IUserHub, UserHubService>();
 builder.Services.AddScoped<IJwtTokenProcess, JwtTokenProcess>();
 builder.Services.AddScoped<IAuthorization, AuthorizationService>();
 builder.Services.AddScoped<IFriendAction, ContactFriendlyService>();
+builder.Services.AddScoped<ICreateGroup, GroupService>();
+builder.Services.AddScoped<ILinkInvitation, GroupService>();
+builder.Services.AddScoped<IHandleMembers, GroupService>();
 builder.Services.AddScoped<HttpContextAccessor>();
 builder.Services.AddScoped<JwtTokenProcess>();
 builder.Services.AddScoped<ICheckingDataChange, CheckingDataChangeService>();

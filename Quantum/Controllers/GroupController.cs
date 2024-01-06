@@ -49,7 +49,6 @@ namespace Quantum.Controllers
             Group group = await _createGroup.CreateGroupAsync(nameGroup, descriptionGroup, creatorId, access);
             if (group == null)
             {
-                _logger.Log(LogLevel.Warning, "Group null");
                 return BadRequest("Не удалось создать группу.");
             }
             _logger.Log(LogLevel.Information, $"Группа {nameGroup} создана");

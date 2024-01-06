@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Quantum.Data;
 using Quantum.GroupFolder.Enums;
 using Quantum.GroupFolder.GroupInterface;
 using Quantum.GroupFolder.Models;
 using Quantum.UserP.Models;
-using System;
 
 namespace Quantum.GroupFolder.Services
 {
@@ -13,11 +13,12 @@ namespace Quantum.GroupFolder.Services
     {
         private readonly DataContext _dataContext;
         private readonly ILogger<GroupService> _logger;
-
-        public GroupService(DataContext dataContext, ILogger<GroupService> logger)
+        private readonly IMapper _mapper;
+        public GroupService(DataContext dataContext, ILogger<GroupService> logger, IMapper mapper)
         {
             _dataContext = dataContext;
             _logger = logger;
+            _mapper = mapper;
         }
         public string LinkGeneration(Guid groupId)
         {
@@ -55,10 +56,10 @@ namespace Quantum.GroupFolder.Services
                 default:
                     throw new ArgumentException("Неизвестная ошибка.");
             }
-            UserGroups newUserGroups = AddCreator(groupId, creatorId);
-            _logger.Log(LogLevel.Information, $"creatorId: {newUserGroups.UserId} groupId: {newUserGroups.GroupId}");
+            GroupUserRole newGroupUserRole = AddCreator(groupId, creatorId);
+            _logger.Log(LogLevel.Information, $"creatorId: {newGroupUserRole.UserId} groupId: {newGroupUserRole.GroupId}");
 
-            bool result = await SaveInDataBase(group, newUserGroups);
+            bool result = await SaveInDataBase(group, newGroupUserRole);
             if (!result)
             {
                 throw new ArgumentException("Ошибка сохранения в базу данных");
@@ -66,13 +67,37 @@ namespace Quantum.GroupFolder.Services
             _logger.Log(LogLevel.Information, "Данные сохранены");
             return group;
         }
-        private async Task<bool> SaveInDataBase(Group group, UserGroups newUserGroups)
+
+        public GroupUserRole AddCreator(Guid groupId, Guid creatorId)
         {
-            await _dataContext.AddAsync(group);
+            GroupUserRole newUserGroups = new GroupUserRole
+            {
+                GroupId = groupId,
+                UserId = creatorId,
+                Role = RolesGroupType.Owner
+            };
+            _logger.Log(LogLevel.Information, $"GroupId: {groupId}\n UserId: {creatorId}\n Role: {RolesGroupType.Owner}");
+            return newUserGroups;
+        }
+        private async Task<bool> SaveInDataBase(Group group, GroupUserRole newGroupUserRole)
+        {
+            if (group == null || newGroupUserRole == null )
+            {
+                return false;
+            }
+            _logger.Log(LogLevel.Information, "Добавление группы в бд");
+            await _dataContext.Groups.AddAsync(group);
 
-            DbSet<UserGroups> userGroups = _dataContext.Set<UserGroups>();
-            await userGroups.AddAsync(newUserGroups);
+            _logger.Log(LogLevel.Information, "Добавление создателя и его роли в бд");
+            await _dataContext.GroupUserRole.AddAsync(newGroupUserRole);
 
+            DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
+            UserGroups userGroups = _mapper.Map<UserGroups>(newGroupUserRole);
+
+            _logger.Log(LogLevel.Information, "Добавление группы к пользователю в бд");
+            await userGroupsDb.AddAsync(userGroups);
+
+            _logger.Log(LogLevel.Information, "Сохранение данных");
             await _dataContext.SaveChangesAsync();
             bool saved = true;
 
@@ -83,16 +108,7 @@ namespace Quantum.GroupFolder.Services
             return true;
 
         }
-        public UserGroups AddCreator(Guid groupId, Guid creatorId)
-        {
-            UserGroups newUserGroups = new UserGroups
-            {
-                GroupId = groupId,
-                UserId = creatorId
-            };
-            return newUserGroups;          
-        }
-        
+              
         public Task AddMembersAsync(Guid groupId, Guid senderId, Guid receiverId)
         {
             throw new NotImplementedException();
