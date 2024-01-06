@@ -60,6 +60,7 @@ namespace Quantum.Data
                 .HasMany(u => u.Roles)
                 .WithOne()
                 .HasForeignKey(u => u.UserId);
+
             modelBuilder.Entity<GroupUserRole>()
                 .HasKey(e => new { e.UserId, e.GroupId });
         }

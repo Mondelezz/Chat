@@ -43,10 +43,10 @@ namespace Quantum.Controllers
             string token = ExtractAuthTokenFromHeaders();
             _logger.Log(LogLevel.Information, token);
 
-            Guid authorId = _jwtTokenProcess.GetUserIdFromJwtToken(token);
-            _logger.Log(LogLevel.Information, authorId.ToString());
+            Guid creatorId = _jwtTokenProcess.GetUserIdFromJwtToken(token);
+            _logger.Log(LogLevel.Information, creatorId.ToString());
 
-            Group group = await _createGroup.CreateGroupAsync(nameGroup, descriptionGroup, access);
+            Group group = await _createGroup.CreateGroupAsync(nameGroup, descriptionGroup, creatorId, access);
             if (group == null)
             {
                 _logger.Log(LogLevel.Warning, "Group null");
