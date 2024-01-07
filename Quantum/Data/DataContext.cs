@@ -14,7 +14,7 @@ namespace Quantum.Data
             optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=QuantumMessage;Username=postgres;Password=26032005");
         }
         public DbSet<User> Users { get; set; }
-        public DbSet<UserInfoOutput> Friends { get; set; }
+        public DbSet<UserInfoOutput> OpenUsers { get; set; }
         public DbSet<TextMessage> Messages {get;set;}
         public DbSet<Group> Groups { get; set; }
         public DbSet<GroupUserRole> GroupUserRole { get; set; }
@@ -63,6 +63,7 @@ namespace Quantum.Data
 
             modelBuilder.Entity<GroupUserRole>()
                 .HasKey(e => new { e.UserId, e.GroupId });
+
         }
     }
 }

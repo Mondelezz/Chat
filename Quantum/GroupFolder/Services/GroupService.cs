@@ -131,7 +131,7 @@ namespace Quantum.GroupFolder.Services
                 _logger.Log(LogLevel.Warning, "Отправитель не находится в группе");
                 return false;
             }
-            if (group.StatusAccess == true)
+            if (group.StatusAccess)
             {
                 UserGroups userGroups = new UserGroups()
                 {
@@ -139,11 +139,23 @@ namespace Quantum.GroupFolder.Services
                     UserId = receiverId,
                 };
                 group.Members.Add(userGroups);
-                group.CountMembers++;               
+                group.CountMembers++;
+                return true;
             }
-            else if(group.StatusAccess == false)
-            { 
-                
+            else if(!group.StatusAccess)
+            {
+                // Доступ - закрытая: При приглашении друга - отправлять уведомление владельцу, о разрешении на принятие в группу.
+                if (group.Requests != null)
+                {
+                    foreach (UserInfoOutput user in group.Requests.Users)
+                    {
+
+                    }
+                }
+            }
+            else
+            {
+                throw new Exception("Неизвестная команда");
             }
             
         }             

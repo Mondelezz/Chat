@@ -1,5 +1,4 @@
 ﻿using Quantum.UserP.Models;
-using StackExchange.Redis;
 using System.Text.Json.Serialization;
 
 namespace Quantum.GroupFolder.Models
@@ -15,6 +14,8 @@ namespace Quantum.GroupFolder.Models
         // Участники
         [JsonIgnore]
         public ICollection<UserGroups> Members { get; set; } = new List<UserGroups>();
+        // Заявки
+        public GroupRequest? Requests { get; set; } = new GroupRequest();
         // Статус доступности(открытая/закрытая) 
         public bool StatusAccess { get; set; } = false;
         // Количество участников
