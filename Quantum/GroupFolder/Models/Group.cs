@@ -1,5 +1,6 @@
 ﻿using Quantum.UserP.Models;
 using StackExchange.Redis;
+using System.Text.Json.Serialization;
 
 namespace Quantum.GroupFolder.Models
 {
@@ -12,6 +13,7 @@ namespace Quantum.GroupFolder.Models
         // Id
         public Guid GroupId { get; set; }
         // Участники
+        [JsonIgnore]
         public ICollection<UserGroups> Members { get; set; } = new List<UserGroups>();
         // Статус доступности(открытая/закрытая) 
         public bool StatusAccess { get; set; } = false;

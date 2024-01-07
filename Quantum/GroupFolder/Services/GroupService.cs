@@ -59,7 +59,7 @@ namespace Quantum.GroupFolder.Services
             GroupUserRole newGroupUserRole = AddCreator(groupId, creatorId);
             _logger.Log(LogLevel.Information, $"creatorId: {newGroupUserRole.UserId} groupId: {newGroupUserRole.GroupId}");
 
-            bool result = await SaveInDataBase(group, newGroupUserRole);
+            bool result = await SaveToDatabase(group, newGroupUserRole);
             if (!result)
             {
                 throw new ArgumentException("Ошибка сохранения в базу данных");
@@ -79,7 +79,7 @@ namespace Quantum.GroupFolder.Services
             _logger.Log(LogLevel.Information, $"GroupId: {groupId}\n UserId: {creatorId}\n Role: {RolesGroupType.Owner}");
             return newUserGroups;
         }
-        private async Task<bool> SaveInDataBase(Group group, GroupUserRole newGroupUserRole)
+        private async Task<bool> SaveToDatabase(Group group, GroupUserRole newGroupUserRole)
         {
             if (group == null || newGroupUserRole == null )
             {
@@ -109,9 +109,43 @@ namespace Quantum.GroupFolder.Services
 
         }
               
-        public Task AddMembersAsync(Guid groupId, Guid senderId, Guid receiverId)
+        public async Task<bool> AddMembersAsync(Guid groupId, Guid senderId, Guid receiverId)
         {
-            throw new NotImplementedException();
+
+            DbSet<UserFriends> userFriendsDb = _dataContext.Set<UserFriends>();
+
+            UserFriends userFriends = await userFriendsDb.FirstAsync(u => u.UserId == senderId && u.FriendId == receiverId);
+            if (userFriends == null)
+            {
+                _logger.Log(LogLevel.Warning, "Пользователи не найдены в бд");
+                return false;
+            }
+            Group group = await _dataContext.Groups.FirstAsync(id => id.GroupId == groupId);
+            if (group == null)
+            {
+                _logger.Log(LogLevel.Warning, "Группы не существвует");
+                return false;
+            }
+            if (!group.Members.Any(u => u.UserId == senderId && u.GroupId == groupId))
+            {
+                _logger.Log(LogLevel.Warning, "Отправитель не находится в группе");
+                return false;
+            }
+            if (group.StatusAccess == true)
+            {
+                UserGroups userGroups = new UserGroups()
+                {
+                    GroupId = groupId,
+                    UserId = receiverId,
+                };
+                group.Members.Add(userGroups);
+                group.CountMembers++;               
+            }
+            else if(group.StatusAccess == false)
+            { 
+                
+            }
+            
         }             
     }
 }

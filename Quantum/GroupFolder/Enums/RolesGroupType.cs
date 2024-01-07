@@ -2,8 +2,8 @@
 {
     public enum RolesGroupType
     {
-        Owner = 1,
-        Admin = 2,
-        Member = 3
+        Owner = 1, // Владелец
+        Admin = 2, // Администратор
+        Member = 3 // Участник
     }
 }
