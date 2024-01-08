@@ -18,6 +18,7 @@ namespace Quantum.Data
         public DbSet<TextMessage> Messages {get;set;}
         public DbSet<Group> Groups { get; set; }
         public DbSet<GroupUserRole> GroupUserRole { get; set; }
+        public DbSet<GroupRequest> GroupRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -64,6 +65,18 @@ namespace Quantum.Data
             modelBuilder.Entity<GroupUserRole>()
                 .HasKey(e => new { e.UserId, e.GroupId });
 
+            /////////////
+            modelBuilder.Entity<Group>()
+                .HasOne(g => g.Requests)
+                .WithOne(r => r.Group)
+                .HasForeignKey<GroupRequest>(r => r.GroupId); 
+
+
+            modelBuilder.Entity<GroupRequest>()
+                .HasMany(gr => gr.Users);
+               
+
+                
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Quantum.GroupFolder.Models
         [JsonIgnore]
         public ICollection<UserGroups> Members { get; set; } = new List<UserGroups>();
         // Заявки
-        public GroupRequest? Requests { get; set; } = new GroupRequest();
+        public GroupRequest Requests { get; set; } = new GroupRequest();
         // Статус доступности(открытая/закрытая) 
         public bool StatusAccess { get; set; } = false;
         // Количество участников

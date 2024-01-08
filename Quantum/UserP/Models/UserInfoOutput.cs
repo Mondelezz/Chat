@@ -1,4 +1,5 @@
-﻿using Quantum.GroupFolder.Enums;
+﻿
+using Quantum.GroupFolder.Models;
 
 namespace Quantum.UserP.Models
 {

@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Quantum.Data;
 using Quantum.GroupFolder.Enums;
 using Quantum.GroupFolder.GroupInterface;
 using Quantum.GroupFolder.Models;
@@ -14,13 +16,22 @@ namespace Quantum.Controllers
     public class GroupController : ControllerBase
     {
         private readonly ICreateGroup _createGroup;
+        private readonly IHandleMembers _handleMembers;
         private readonly JwtTokenProcess _jwtTokenProcess;
         private readonly ILogger<GroupController> _logger;
-        public GroupController(ICreateGroup createGroup, JwtTokenProcess jwtTokenProcess, ILogger<GroupController> logger)
+        private readonly DataContext _dataContext;
+        public GroupController(
+            ICreateGroup createGroup,
+            IHandleMembers handleMembers,
+            JwtTokenProcess jwtTokenProcess,
+            ILogger<GroupController> logger,
+            DataContext dataContext)
         { 
             _createGroup = createGroup;
+            _handleMembers = handleMembers;
             _jwtTokenProcess = jwtTokenProcess;
             _logger = logger;
+            _dataContext = dataContext;
         }
         private string ExtractAuthTokenFromHeaders()
         {
@@ -53,6 +64,40 @@ namespace Quantum.Controllers
             }
             _logger.Log(LogLevel.Information, $"Группа {nameGroup} создана");
             return Ok(group);          
+        }
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("requst")]
+        public async Task<ActionResult<bool>> Join(Guid groupId)
+        {
+            string token = ExtractAuthTokenFromHeaders();
+            _logger.Log(LogLevel.Information, token);
+
+            Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(token);
+            _logger.Log(LogLevel.Information, userId.ToString());
+
+            Group group = await _dataContext.Groups.FirstAsync(i => i.GroupId == groupId);
+            if (group == null) 
+            { 
+                return NotFound();
+            }
+            if (group.StatusAccess)
+            {
+                bool result = await _handleMembers.SendRequestOpenGroup(groupId, userId);
+                if (result)
+                {
+                    return Ok("Вы успешно вступили в группу");
+                }
+                return BadRequest();
+            }
+            else
+            {
+                bool result = await _handleMembers.SendRequestClosedGroup(groupId, userId);
+                if (result)
+                {
+                    return Ok("Заявка отправлена");
+                }
+                return BadRequest();
+            }
         }
     }
 }

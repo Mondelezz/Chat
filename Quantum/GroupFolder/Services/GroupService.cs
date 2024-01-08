@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.Execution;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Quantum.Data;
@@ -6,6 +7,8 @@ using Quantum.GroupFolder.Enums;
 using Quantum.GroupFolder.GroupInterface;
 using Quantum.GroupFolder.Models;
 using Quantum.UserP.Models;
+using System.Text.RegularExpressions;
+using Group = Quantum.GroupFolder.Models.Group;
 
 namespace Quantum.GroupFolder.Services
 {
@@ -26,8 +29,6 @@ namespace Quantum.GroupFolder.Services
             return linkInvitation;
         }
 
-        [Authorize(AuthenticationSchemes = "Bearer")]
-        [Authorize]
         public async Task<Group> CreateGroupAsync(string nameGroup, string? descriptionGroup, Guid creatorId, AccessGroup access)
         {
             Guid groupId = Guid.NewGuid();
@@ -108,7 +109,18 @@ namespace Quantum.GroupFolder.Services
             return true;
 
         }
-              
+        /// <summary>
+        /// Приглашение участников в открытую и закрытую группу (только друзья)
+        /// </summary>
+        /// <param name="groupId"></param>
+        /// Айди группы
+        /// <param name="senderId">
+        /// Айди отправителя (кто приглашает)
+        /// </param>  
+        /// <param name="receiverId">
+        /// Айди получателя (приглашённый)
+        /// </param>
+        /// <returns> Отправлена/ Не отправлена заявка </returns> 
         public async Task<bool> AddMembersAsync(Guid groupId, Guid senderId, Guid receiverId)
         {
 
@@ -120,6 +132,7 @@ namespace Quantum.GroupFolder.Services
                 _logger.Log(LogLevel.Warning, "Пользователи не найдены в бд");
                 return false;
             }
+
             Group group = await _dataContext.Groups.FirstAsync(id => id.GroupId == groupId);
             if (group == null)
             {
@@ -128,36 +141,132 @@ namespace Quantum.GroupFolder.Services
             }
             if (!group.Members.Any(u => u.UserId == senderId && u.GroupId == groupId))
             {
-                _logger.Log(LogLevel.Warning, "Отправитель не находится в группе");
+                _logger.Log(LogLevel.Warning, "Человек, отправляющий приглашение не находится в группе");
                 return false;
             }
+            // Добавление друга в ОТКРЫТУЮ группу
             if (group.StatusAccess)
             {
-                UserGroups userGroups = new UserGroups()
+                GroupUserRole newUserGroups = new GroupUserRole
                 {
                     GroupId = groupId,
                     UserId = receiverId,
+                    Role = RolesGroupType.Member
                 };
+                _logger.Log(LogLevel.Information, $"GroupId: {groupId}\n UserId: {receiverId}\n Role: {RolesGroupType.Member}");
+                await _dataContext.GroupUserRole.AddAsync(newUserGroups);
+
+                UserGroups userGroups = _mapper.Map<UserGroups>(newUserGroups);
+
                 group.Members.Add(userGroups);
                 group.CountMembers++;
+
+                DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
+                await userGroupsDb.AddAsync(userGroups);
+                _logger.Log(LogLevel.Information, "Пользователь добавлен");
+
+                _dataContext.Groups.Update(group);
+                _logger.Log(LogLevel.Information, "Данные обновлены");
+               
+                await _dataContext.SaveChangesAsync();
                 return true;
             }
+            // Добавление друга в ЗАКРЫТУЮ группу
             else if(!group.StatusAccess)
             {
-                // Доступ - закрытая: При приглашении друга - отправлять уведомление владельцу, о разрешении на принятие в группу.
-                if (group.Requests != null)
+                // Доступ - закрытая: При приглашении друга - добавлять пользователя в заявки, о разрешении на принятие в группу.
+                User user = await _dataContext.Users.FirstAsync(id => id.UserId == receiverId);
+                if (user == null)
                 {
-                    foreach (UserInfoOutput user in group.Requests.Users)
-                    {
-
-                    }
+                    _logger.Log(LogLevel.Warning, "Пользователя, которого приглашают не существует");
+                    return false;
                 }
+                UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
+                group.Requests.Users?.Add(userInfoOutput);
+                group.Requests.CountRequsts++;
+
+
+                return true;
+                // Заявка отправлена
             }
             else
             {
                 throw new Exception("Неизвестная команда");
+            }           
+        }
+        /// <summary>
+        /// Отправка заявки в закрытую группу
+        /// </summary>
+        /// <param name="groupId">
+        /// Айди группы
+        /// </param>
+        /// <param name="senderId">
+        /// Айди отправителя заявки
+        /// </param>
+        /// <returns> Отправлена/ Не отправлена заявка </returns> 
+   
+        public async Task<bool> SendRequestClosedGroup(Guid groupId, Guid senderId)
+        {
+            Group group = await _dataContext.Groups.FirstAsync(id => id.GroupId == groupId);
+            if (group == null)
+            {
+                _logger.Log(LogLevel.Warning, "Группы не существвует");
+                return false;
             }
-            
-        }             
+
+            User user = await _dataContext.Users.FirstAsync(id => id.UserId == senderId);
+            if (user == null)
+            {
+                _logger.Log(LogLevel.Warning, "Пользователя не существует");
+                return false;
+            }
+            UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
+            group.Requests.Users?.Add(userInfoOutput);
+            group.Requests.CountRequsts++;
+            return true;
+            // Заявка отправлена
+        }
+
+
+        public async Task<bool> SendRequestOpenGroup(Guid groupId, Guid senderId)
+        {
+            Group group = await _dataContext.Groups.FirstAsync(id => id.GroupId == groupId);
+            if (group == null)
+            {
+                _logger.Log(LogLevel.Warning, "Группы не существвует");
+                return false;
+            }
+
+            User user = await _dataContext.Users.FirstAsync(id => id.UserId == senderId);
+            if (user == null)
+            {
+                _logger.Log(LogLevel.Warning, "Пользователя не существует");
+                return false;
+            }
+
+            GroupUserRole newUserGroups = new GroupUserRole
+            {
+                GroupId = groupId,
+                UserId = senderId,
+                Role = RolesGroupType.Member
+            };
+            _logger.Log(LogLevel.Information, $"GroupId: {groupId}\n UserId: {senderId}\n Role: {RolesGroupType.Member}");
+            await _dataContext.GroupUserRole.AddAsync(newUserGroups);
+
+            UserGroups userGroups = _mapper.Map<UserGroups>(newUserGroups);
+
+            group.Members.Add(userGroups);
+            group.CountMembers++;
+
+            DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
+            await userGroupsDb.AddAsync(userGroups);
+            _logger.Log(LogLevel.Information, "Пользователь добавлен");
+
+            _dataContext.Groups.Update(group);
+            _logger.Log(LogLevel.Information, "Данные обновлены");
+
+            await _dataContext.SaveChangesAsync();
+            return true;         
+        }      
     }
 }
