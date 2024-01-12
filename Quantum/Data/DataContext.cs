@@ -65,18 +65,18 @@ namespace Quantum.Data
             modelBuilder.Entity<GroupUserRole>()
                 .HasKey(e => new { e.UserId, e.GroupId });
 
-            /////////////
             modelBuilder.Entity<Group>()
-                .HasOne(g => g.Requests)
+                .HasOne(g => g.GroupRequest)
                 .WithOne(r => r.Group)
-                .HasForeignKey<GroupRequest>(r => r.GroupId); 
-
+                .HasForeignKey<Group>(g => g.GroupRequestId)
+                .IsRequired();
 
             modelBuilder.Entity<GroupRequest>()
-                .HasMany(gr => gr.Users);
-               
+                .HasKey(gr => gr.GroupRequestId);
 
-                
+            modelBuilder.Entity<GroupRequest>()
+                .HasMany(gr => gr.Users)
+                .WithMany(uio => uio.GroupRequests);
         }
     }
 }

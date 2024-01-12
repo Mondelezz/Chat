@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
 using Quantum.Data;
 using Quantum.Models.DTO;
 using Quantum.Services;
@@ -39,8 +38,7 @@ namespace Quantum.UserP.UserServices
                 throw;
             }
         }
-        [Authorize(AuthenticationSchemes = "Bearer")]
-        [Authorize]
+
         public async Task<UserInfoOutput> UserUpdateInfoAsync(UserOpenData updateInfo, string token)
         {
             Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(token);

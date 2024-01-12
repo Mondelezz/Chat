@@ -1,13 +1,10 @@
 ﻿using AutoMapper;
-using AutoMapper.Execution;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Quantum.Data;
 using Quantum.GroupFolder.Enums;
 using Quantum.GroupFolder.GroupInterface;
 using Quantum.GroupFolder.Models;
 using Quantum.UserP.Models;
-using System.Text.RegularExpressions;
 using Group = Quantum.GroupFolder.Models.Group;
 
 namespace Quantum.GroupFolder.Services
@@ -182,10 +179,10 @@ namespace Quantum.GroupFolder.Services
                     return false;
                 }
                 UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
-                group.Requests.Users?.Add(userInfoOutput);
-                group.Requests.CountRequsts++;
+                group.GroupRequest.Users?.Add(userInfoOutput);
+                group.GroupRequest.CountRequests++;
 
-
+                // ДОДЕЛАТЬ
                 return true;
                 // Заявка отправлена
             }
@@ -205,6 +202,7 @@ namespace Quantum.GroupFolder.Services
         /// </param>
         /// <returns> Отправлена/ Не отправлена заявка </returns> 
    
+        // ДОДЕЛАТЬ
         public async Task<bool> SendRequestClosedGroup(Guid groupId, Guid senderId)
         {
             Group group = await _dataContext.Groups.FirstAsync(id => id.GroupId == groupId);
@@ -221,8 +219,8 @@ namespace Quantum.GroupFolder.Services
                 return false;
             }
             UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
-            group.Requests.Users?.Add(userInfoOutput);
-            group.Requests.CountRequsts++;
+            group.GroupRequest.Users?.Add(userInfoOutput);
+            group.GroupRequest.CountRequests++;
             return true;
             // Заявка отправлена
         }

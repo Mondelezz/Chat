@@ -1,16 +1,17 @@
 ﻿using Quantum.UserP.Models;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Quantum.GroupFolder.Models
 {
     public class GroupRequest
     {
         [Key]
-        [ForeignKey("Group")]
+        public Guid GroupRequestId { get; set; }
+        public Group Group { get; set; }
         public Guid GroupId { get; set; }
-        public Group Group { get; set; }      
+        [JsonIgnore]
         public ICollection<UserInfoOutput> Users { get; set; } = new List<UserInfoOutput>();
-        public int CountRequsts { get; set; }
+        public int CountRequests { get; set; }
     }
 }

@@ -24,13 +24,13 @@ namespace Quantum.Migrations
 
             modelBuilder.Entity("GroupRequestUserInfoOutput", b =>
                 {
-                    b.Property<Guid>("GroupRequestRequestsId")
+                    b.Property<Guid>("GroupRequestsGroupRequestId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("UsersUserId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("GroupRequestRequestsId", "UsersUserId");
+                    b.HasKey("GroupRequestsGroupRequestId", "UsersUserId");
 
                     b.HasIndex("UsersUserId");
 
@@ -49,6 +49,9 @@ namespace Quantum.Migrations
                     b.Property<string>("DescriptionGroup")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("GroupRequestId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("LinkInvitation")
                         .IsRequired()
                         .HasColumnType("text");
@@ -57,31 +60,32 @@ namespace Quantum.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("RequestsId")
-                        .HasColumnType("uuid");
-
                     b.Property<bool>("StatusAccess")
                         .HasColumnType("boolean");
 
                     b.HasKey("GroupId");
 
-                    b.HasIndex("RequestsId");
+                    b.HasIndex("GroupRequestId")
+                        .IsUnique();
 
                     b.ToTable("Groups");
                 });
 
             modelBuilder.Entity("Quantum.GroupFolder.Models.GroupRequest", b =>
                 {
-                    b.Property<Guid>("RequestsId")
+                    b.Property<Guid>("GroupRequestId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("CountRequsts")
+                    b.Property<int>("CountRequests")
                         .HasColumnType("integer");
 
-                    b.HasKey("RequestsId");
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
 
-                    b.ToTable("GroupRequest");
+                    b.HasKey("GroupRequestId");
+
+                    b.ToTable("GroupRequests");
                 });
 
             modelBuilder.Entity("Quantum.GroupFolder.Models.GroupUserRole", b =>
@@ -182,6 +186,9 @@ namespace Quantum.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("GroupRequestId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("text");
@@ -217,7 +224,7 @@ namespace Quantum.Migrations
                 {
                     b.HasOne("Quantum.GroupFolder.Models.GroupRequest", null)
                         .WithMany()
-                        .HasForeignKey("GroupRequestRequestsId")
+                        .HasForeignKey("GroupRequestsGroupRequestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -230,13 +237,13 @@ namespace Quantum.Migrations
 
             modelBuilder.Entity("Quantum.GroupFolder.Models.Group", b =>
                 {
-                    b.HasOne("Quantum.GroupFolder.Models.GroupRequest", "Requests")
-                        .WithMany()
-                        .HasForeignKey("RequestsId")
+                    b.HasOne("Quantum.GroupFolder.Models.GroupRequest", "GroupRequest")
+                        .WithOne("Group")
+                        .HasForeignKey("Quantum.GroupFolder.Models.Group", "GroupRequestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Requests");
+                    b.Navigation("GroupRequest");
                 });
 
             modelBuilder.Entity("Quantum.GroupFolder.Models.GroupUserRole", b =>
@@ -289,6 +296,12 @@ namespace Quantum.Migrations
             modelBuilder.Entity("Quantum.GroupFolder.Models.Group", b =>
                 {
                     b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("Quantum.GroupFolder.Models.GroupRequest", b =>
+                {
+                    b.Navigation("Group")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Quantum.UserP.Models.User", b =>
