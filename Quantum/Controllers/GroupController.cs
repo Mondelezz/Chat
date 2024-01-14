@@ -102,7 +102,7 @@ namespace Quantum.Controllers
         }
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("invite")]
-        public async Task<ActionResult<bool>> Invite([FromBody] Guid groupId, Guid receiverId)
+        public async Task<ActionResult<bool>> Invite(Guid groupId, Guid receiverId)
         {
             string authHeaderValue = ExtractAuthTokenFromHeaders();
             _logger.Log(LogLevel.Information, authHeaderValue);

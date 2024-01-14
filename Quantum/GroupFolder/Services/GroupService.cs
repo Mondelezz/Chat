@@ -101,6 +101,9 @@ namespace Quantum.GroupFolder.Services
             DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
             UserGroups userGroups = _mapper.Map<UserGroups>(newGroupUserRole);
 
+            _logger.Log(LogLevel.Information, "Добавление создателя в группу");
+            group.Members.Add(userGroups);
+
             _logger.Log(LogLevel.Information, "Добавление группы к пользователю в бд");
             await userGroupsDb.AddAsync(userGroups);
 
@@ -136,20 +139,21 @@ namespace Quantum.GroupFolder.Services
 
             DbSet<UserFriends> userFriendsDb = _dataContext.Set<UserFriends>();
 
-            UserFriends userFriends = await userFriendsDb.FirstAsync(u => u.UserId == senderId && u.FriendId == receiverId);
+            UserFriends userFriends = await userFriendsDb.AsNoTracking().FirstAsync(u => u.UserId == senderId && u.FriendId == receiverId);
             if (userFriends == null)
             {
                 _logger.Log(LogLevel.Warning, "Пользователи не найдены в бд");
                 return false;
             }
 
-            Group group = await _dataContext.Groups.FirstAsync(id => id.GroupId == groupId);
+            Group group = await _dataContext.Groups.Include(u => u.Members).Include(gr => gr.GroupRequest).FirstAsync(id => id.GroupId == groupId);
             if (group == null)
             {
                 _logger.Log(LogLevel.Warning, "Группы не существвует");
                 return false;
             }
-            if (!group.Members.Any(u => u.UserId == senderId && u.GroupId == groupId))
+            bool groupFlags = group.Members.Any(u => u.UserId == senderId && u.GroupId == groupId);
+            if (!groupFlags)
             {
                 _logger.Log(LogLevel.Warning, "Человек, отправляющий приглашение не находится в группе");
                 return false;
@@ -185,7 +189,7 @@ namespace Quantum.GroupFolder.Services
             else if(!group.StatusAccess)
             {
                 // Доступ - закрытая: При приглашении друга - добавлять пользователя в заявки, о разрешении на принятие в группу.
-                User user = await _dataContext.Users.FirstAsync(id => id.UserId == receiverId);
+                User user = await _dataContext.Users.AsNoTracking().FirstAsync(id => id.UserId == receiverId);
                 if (user == null)
                 {
                     _logger.Log(LogLevel.Warning, "Пользователя, которого приглашают не существует");
@@ -195,8 +199,8 @@ namespace Quantum.GroupFolder.Services
 
                 GroupRequestUserInfoOutput groupRequestUserInfoOutput = new GroupRequestUserInfoOutput()
                 {
-                    UserInfoOutputId = userInfoOutput.UserId,
-                    GroupRequestId = groupId,
+                    UserInfoOutputId = receiverId,
+                    GroupRequestId = group.GroupRequestId,
                 };
 
                 DbSet<GroupRequestUserInfoOutput> groupRequestUserInfoOutputsDb = _dataContext.Set<GroupRequestUserInfoOutput>();
@@ -204,9 +208,9 @@ namespace Quantum.GroupFolder.Services
                 await groupRequestUserInfoOutputsDb.AddAsync(groupRequestUserInfoOutput);
 
                 group.GroupRequest.CountRequests++;
+                group.GroupRequest.GroupId = groupId;
 
                 await _dataContext.SaveChangesAsync();
-                // ДОДЕЛАТЬ
                 return true;
                 // Заявка отправлена
             }
@@ -229,7 +233,7 @@ namespace Quantum.GroupFolder.Services
         // ДОДЕЛАТЬ
         public async Task<bool> SendRequestClosedGroup(Guid groupId, Guid senderId)
         {
-            Group group = await _dataContext.Groups.FirstAsync(id => id.GroupId == groupId);
+            Group group = await _dataContext.Groups.Include(gr => gr.GroupRequest).FirstAsync(id => id.GroupId == groupId);
             if (group == null)
             {
                 _logger.Log(LogLevel.Warning, "Группы не существвует");
@@ -246,8 +250,8 @@ namespace Quantum.GroupFolder.Services
 
             GroupRequestUserInfoOutput groupRequestUserInfoOutput = new GroupRequestUserInfoOutput()
             {
-                UserInfoOutputId = userInfoOutput.UserId,
-                GroupRequestId = groupId,
+                UserInfoOutputId = senderId,
+                GroupRequestId = group.GroupRequestId,
             };
 
             DbSet<GroupRequestUserInfoOutput> groupRequestUserInfoOutputsDb = _dataContext.Set<GroupRequestUserInfoOutput>();
@@ -255,8 +259,8 @@ namespace Quantum.GroupFolder.Services
             await groupRequestUserInfoOutputsDb.AddAsync(groupRequestUserInfoOutput);
 
             group.GroupRequest.CountRequests++;
-
-
+            group.GroupRequest.GroupId = groupId;
+            
             await _dataContext.SaveChangesAsync();
             return true;
             // Заявка отправлена
@@ -281,7 +285,7 @@ namespace Quantum.GroupFolder.Services
                 return false;
             }
 
-            User user = await _dataContext.Users.FirstAsync(id => id.UserId == senderId);
+            User user = await _dataContext.Users.AsNoTracking().FirstAsync(id => id.UserId == senderId);
             if (user == null)
             {
                 _logger.Log(LogLevel.Warning, "Пользователя не существует");
