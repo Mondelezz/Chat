@@ -36,8 +36,8 @@ namespace Quantum.GroupFolder.Services
                 LinkInvitation = linkInvitation,
                 NameGroup = nameGroup,
                 DescriptionGroup = descriptionGroup,
-                CountMembers = 1
-              
+                CountMembers = 1,
+                GroupRequestId = Guid.NewGuid(),
             };
             switch (access)
             {
@@ -65,7 +65,16 @@ namespace Quantum.GroupFolder.Services
             _logger.Log(LogLevel.Information, "Данные сохранены");
             return group;
         }
-
+        /// <summary>
+        /// Добалвение владельца в группу, как первого участника + назначение роли
+        /// </summary>
+        /// <param name="groupId">
+        /// Айди группы
+        /// </param>
+        /// <param name="creatorId">
+        /// Айди создателя
+        /// </param>
+        /// <returns>Добавление владельца</returns>
         public GroupUserRole AddCreator(Guid groupId, Guid creatorId)
         {
             GroupUserRole newUserGroups = new GroupUserRole
@@ -94,6 +103,10 @@ namespace Quantum.GroupFolder.Services
 
             _logger.Log(LogLevel.Information, "Добавление группы к пользователю в бд");
             await userGroupsDb.AddAsync(userGroups);
+
+            _logger.Log(LogLevel.Information, "Добавление заявок группы в бд");
+            GroupRequest groupRequest = new GroupRequest();
+            groupRequest.GroupId = group.GroupId;
 
             _logger.Log(LogLevel.Information, "Сохранение данных");
             await _dataContext.SaveChangesAsync();
@@ -179,9 +192,20 @@ namespace Quantum.GroupFolder.Services
                     return false;
                 }
                 UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
-                group.GroupRequest.Users?.Add(userInfoOutput);
+
+                GroupRequestUserInfoOutput groupRequestUserInfoOutput = new GroupRequestUserInfoOutput()
+                {
+                    UserInfoOutputId = userInfoOutput.UserId,
+                    GroupRequestId = groupId,
+                };
+
+                DbSet<GroupRequestUserInfoOutput> groupRequestUserInfoOutputsDb = _dataContext.Set<GroupRequestUserInfoOutput>();
+
+                await groupRequestUserInfoOutputsDb.AddAsync(groupRequestUserInfoOutput);
+
                 group.GroupRequest.CountRequests++;
 
+                await _dataContext.SaveChangesAsync();
                 // ДОДЕЛАТЬ
                 return true;
                 // Заявка отправлена
@@ -219,13 +243,35 @@ namespace Quantum.GroupFolder.Services
                 return false;
             }
             UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
-            group.GroupRequest.Users?.Add(userInfoOutput);
+
+            GroupRequestUserInfoOutput groupRequestUserInfoOutput = new GroupRequestUserInfoOutput()
+            {
+                UserInfoOutputId = userInfoOutput.UserId,
+                GroupRequestId = groupId,
+            };
+
+            DbSet<GroupRequestUserInfoOutput> groupRequestUserInfoOutputsDb = _dataContext.Set<GroupRequestUserInfoOutput>();
+
+            await groupRequestUserInfoOutputsDb.AddAsync(groupRequestUserInfoOutput);
+
             group.GroupRequest.CountRequests++;
+
+
+            await _dataContext.SaveChangesAsync();
             return true;
             // Заявка отправлена
         }
 
-
+        /// <summary>
+        /// Отправка заявки в открытую группу
+        /// </summary>
+        /// <param name="groupId">
+        /// Айди группы
+        /// </param>
+        /// <param name="senderId">
+        /// Айди отправителя заявки
+        /// </param>
+        /// <returns> Вступил/ Не встуипл </returns> 
         public async Task<bool> SendRequestOpenGroup(Guid groupId, Guid senderId)
         {
             Group group = await _dataContext.Groups.FirstAsync(id => id.GroupId == groupId);

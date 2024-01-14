@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Quantum.GroupFolder.Models;
 using Quantum.Models.DTO;
 using Quantum.UserP.Models;
@@ -38,7 +39,7 @@ namespace Quantum.Data
 
             modelBuilder.Entity<UserFriends>()
                 .HasOne(u => u.Friend)
-                .WithMany(u => u.Users)
+                .WithMany(u => u.Friend)
                 .HasForeignKey(u => u.FriendId);
 
             modelBuilder.Entity<UserFriends>()
@@ -71,12 +72,19 @@ namespace Quantum.Data
                 .HasForeignKey<Group>(g => g.GroupRequestId)
                 .IsRequired();
 
-            modelBuilder.Entity<GroupRequest>()
-                .HasKey(gr => gr.GroupRequestId);
+            modelBuilder.Entity<GroupRequestUserInfoOutput>()
+                .HasOne(gr => gr.GroupRequest)
+                .WithMany(u => u.Users)
+                .HasForeignKey(key => key.GroupRequestId);
 
-            modelBuilder.Entity<GroupRequest>()
-                .HasMany(gr => gr.Users)
-                .WithMany(uio => uio.GroupRequests);
+            modelBuilder.Entity<GroupRequestUserInfoOutput>()
+                .HasOne(gr => gr.UserInfoOutput)
+                .WithMany(u => u.GroupRequests)
+                .HasForeignKey(key => key.UserInfoOutputId);
+
+            modelBuilder.Entity<GroupRequestUserInfoOutput>()
+                .HasKey(key => new { key.GroupRequestId, key.UserInfoOutputId });
+
         }
     }
 }

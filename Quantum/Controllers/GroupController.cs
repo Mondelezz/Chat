@@ -8,6 +8,7 @@ using Quantum.GroupFolder.Enums;
 using Quantum.GroupFolder.GroupInterface;
 using Quantum.GroupFolder.Models;
 using Quantum.Services;
+using Quantum.UserP.Models;
 
 namespace Quantum.Controllers
 {
@@ -69,10 +70,10 @@ namespace Quantum.Controllers
         [HttpPost("requst")]
         public async Task<ActionResult<bool>> Join(Guid groupId)
         {
-            string token = ExtractAuthTokenFromHeaders();
-            _logger.Log(LogLevel.Information, token);
+            string authHeaderValue = ExtractAuthTokenFromHeaders();
+            _logger.Log(LogLevel.Information, authHeaderValue);
 
-            Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(token);
+            Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(authHeaderValue);
             _logger.Log(LogLevel.Information, userId.ToString());
 
             Group group = await _dataContext.Groups.FirstAsync(i => i.GroupId == groupId);
@@ -87,7 +88,7 @@ namespace Quantum.Controllers
                 {
                     return Ok("Вы успешно вступили в группу");
                 }
-                return BadRequest();
+                return BadRequest("не удалось вступить в группу");
             }
             else
             {
@@ -96,8 +97,30 @@ namespace Quantum.Controllers
                 {
                     return Ok("Заявка отправлена");
                 }
-                return BadRequest();
+                return BadRequest("Не удалось отправить заявку.");
             }
         }
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("invite")]
+        public async Task<ActionResult<bool>> Invite([FromBody] Guid groupId, Guid receiverId)
+        {
+            string authHeaderValue = ExtractAuthTokenFromHeaders();
+            _logger.Log(LogLevel.Information, authHeaderValue);
+
+            Guid senderId = _jwtTokenProcess.GetUserIdFromJwtToken(authHeaderValue);
+            _logger.Log(LogLevel.Information, "Айди отправителя приглашнеия: " + senderId.ToString());
+
+            bool result = await _handleMembers.AddMembersAsync(
+                groupId: groupId,
+                senderId: senderId,
+                receiverId: receiverId);
+            if (result)
+            {
+                return Ok("Приглашение отправлено.");
+            }
+            return BadRequest("Не удалось отправить приглшашение.");
+        }
+
+
     }
 }

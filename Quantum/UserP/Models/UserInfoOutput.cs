@@ -10,9 +10,8 @@ namespace Quantum.UserP.Models
         public string PhoneNumber { get; set; } = string.Empty;
         public DateTime RegistrationDate { get; set; }
         [JsonIgnore]
-        public ICollection<UserFriends> Users { get; set; } = new List<UserFriends>();
+        public ICollection<UserFriends> Friend { get; set; } = new List<UserFriends>();
         [JsonIgnore]
-        public ICollection<GroupRequest> GroupRequests { get; set; } = new List<GroupRequest>();
-        public Guid GroupRequestId { get; set; }
+        public ICollection<GroupRequestUserInfoOutput> GroupRequests { get; set; } = new List<GroupRequestUserInfoOutput>();
     }
 }

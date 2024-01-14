@@ -14,6 +14,7 @@ namespace Quantum.Mapping
             CreateMap<User, UserInfoOutput>().ReverseMap();
             CreateMap<User, UserOpenData>().ReverseMap();
             CreateMap<GroupUserRole, UserGroups>().ReverseMap();
+            CreateMap<GroupRequest, Group>().ReverseMap();
         }
     }
 }
