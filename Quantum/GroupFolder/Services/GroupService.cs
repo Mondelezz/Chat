@@ -87,11 +87,7 @@ namespace Quantum.GroupFolder.Services
             return newUserGroups;
         }
         private async Task<bool> SaveToDatabase(Group group, GroupUserRole newGroupUserRole)
-        {
-            if (group == null || newGroupUserRole == null )
-            {
-                return false;
-            }
+        {           
             _logger.Log(LogLevel.Information, "Добавление группы в бд");
             await _dataContext.Groups.AddAsync(group);
 
@@ -113,12 +109,7 @@ namespace Quantum.GroupFolder.Services
 
             _logger.Log(LogLevel.Information, "Сохранение данных");
             await _dataContext.SaveChangesAsync();
-            bool saved = true;
-
-            if (!saved)
-            {
-                return false;
-            }
+            
             return true;
 
         }
