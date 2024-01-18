@@ -56,5 +56,15 @@ namespace Quantum.GroupFolder.GroupInterface
         /// </param>
         /// <returns>Добавление владельца</returns>
         public GroupUserRole AddCreator(Guid groupId, Guid creatorId);
-    }
+        /// <summary>
+        /// Принятие заявки
+        /// </summary>
+        /// <param name="groupId">
+        /// Айди группы
+        /// </param>
+        /// <returns>
+        /// 
+        /// </returns>
+        public Task<bool> AcceptRequests(Guid ownerId, Guid groupId, Guid userId);
+    }   
 }

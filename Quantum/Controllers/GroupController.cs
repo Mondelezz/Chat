@@ -67,7 +67,7 @@ namespace Quantum.Controllers
             return Ok(group);          
         }
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [HttpPost("requst")]
+        [HttpPost("request")]
         public async Task<ActionResult<bool>> Join(Guid groupId)
         {
             string authHeaderValue = ExtractAuthTokenFromHeaders();
@@ -120,7 +120,24 @@ namespace Quantum.Controllers
             }
             return BadRequest("Не удалось отправить приглшашение.");
         }
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("add")]
+        public async Task<ActionResult<bool>> AcceptRequest(Guid groupId, Guid userId)
+        {
+            string authHeaderValue = ExtractAuthTokenFromHeaders();
+            _logger.Log(LogLevel.Information, authHeaderValue);
 
+            Guid ownerId = _jwtTokenProcess.GetUserIdFromJwtToken(authHeaderValue);
+            _logger.Log(LogLevel.Information, "Айди владельца: " + ownerId.ToString());
+
+            await _handleMembers.AcceptRequests(ownerId, groupId, userId);
+            bool result = await _handleMembers.SendRequestOpenGroup(groupId, userId);
+            if (result)
+            {
+                return Ok("Согласие");
+            }
+            return BadRequest("Отказ");
+        }
 
     }
 }

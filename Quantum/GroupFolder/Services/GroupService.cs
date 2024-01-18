@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Pipelines.Sockets.Unofficial.Buffers;
 using Quantum.Data;
 using Quantum.GroupFolder.Enums;
 using Quantum.GroupFolder.GroupInterface;
 using Quantum.GroupFolder.Models;
 using Quantum.UserP.Models;
+using System.Text.RegularExpressions;
 using Group = Quantum.GroupFolder.Models.Group;
 
 namespace Quantum.GroupFolder.Services
@@ -306,6 +308,42 @@ namespace Quantum.GroupFolder.Services
 
             await _dataContext.SaveChangesAsync();
             return true;         
-        }      
+        }
+
+        public async Task<bool> AcceptRequests(Guid ownerId,Guid groupId, Guid userId)
+        {
+            Group group = await _dataContext.Groups.Include(u => u.Members).FirstAsync(i => i.GroupId == groupId);
+            if (group == null)
+            {
+                 throw new Exception("Группа не найдена");
+            }
+
+            GroupUserRole groupUserRole = await _dataContext.GroupUserRole.FirstAsync
+                (u => u.GroupId == group.GroupId
+                    &&
+                u.UserId == ownerId
+                    &&
+                u.Role == RolesGroupType.Owner);
+            if (groupUserRole == null)
+            {
+                throw new Exception("Группа, владелец и роль не совпали.");
+            }
+
+            DbSet<GroupRequestUserInfoOutput> groupRequestUserInfoOutputsDb = _dataContext.Set<GroupRequestUserInfoOutput>();
+            GroupRequestUserInfoOutput request = await groupRequestUserInfoOutputsDb.FirstAsync(
+                u => u.UserInfoOutputId == userId
+                    &&
+                u.GroupRequestId == group.GroupRequestId);
+            if (request == null)
+            {
+                throw new Exception("Заявка не найдена");
+            }
+            groupRequestUserInfoOutputsDb.Remove(request);
+            GroupRequest groupRequest = await _dataContext.GroupRequests.FirstAsync(gr => gr.GroupId == groupId);
+            groupRequest.CountRequests--;
+
+            await _dataContext.SaveChangesAsync();
+            return true;
+        }
     }
 }
