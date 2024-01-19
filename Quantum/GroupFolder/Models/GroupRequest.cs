@@ -12,6 +12,7 @@ namespace Quantum.GroupFolder.Models
         public Guid GroupId { get; set; }
         [JsonIgnore]
         public ICollection<GroupRequestUserInfoOutput> Users { get; set; } = new List<GroupRequestUserInfoOutput>();
+        
         public int CountRequests { get; set; }
     }
 }

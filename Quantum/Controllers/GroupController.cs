@@ -83,7 +83,7 @@ namespace Quantum.Controllers
             }
             if (group.StatusAccess)
             {
-                bool result = await _handleMembers.SendRequestOpenGroup(groupId, userId);
+                bool result = await _handleMembers.SendRequestOpenGroupAsync(groupId, userId);
                 if (result)
                 {
                     return Ok("Вы успешно вступили в группу");
@@ -92,7 +92,7 @@ namespace Quantum.Controllers
             }
             else
             {
-                bool result = await _handleMembers.SendRequestClosedGroup(groupId, userId);
+                bool result = await _handleMembers.SendRequestClosedGroupAsync(groupId, userId);
                 if (result)
                 {
                     return Ok("Заявка отправлена");
@@ -130,14 +130,29 @@ namespace Quantum.Controllers
             Guid ownerId = _jwtTokenProcess.GetUserIdFromJwtToken(authHeaderValue);
             _logger.Log(LogLevel.Information, "Айди владельца: " + ownerId.ToString());
 
-            await _handleMembers.AcceptRequests(ownerId, groupId, userId);
-            bool result = await _handleMembers.SendRequestOpenGroup(groupId, userId);
+            await _handleMembers.AcceptRequestsAsync(ownerId, groupId, userId);
+            bool result = await _handleMembers.SendRequestOpenGroupAsync(groupId, userId);
             if (result)
             {
                 return Ok("Согласие");
             }
             return BadRequest("Отказ");
         }
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpDelete("del_user")]
+        public async Task<ActionResult<bool>> RemoveUserFromGroupAsync(Guid groupId, Guid delUserId)
+        {
+            string authHeaderValue = ExtractAuthTokenFromHeaders();
+            _logger.Log(LogLevel.Information, authHeaderValue);
 
+            Guid userId = _jwtTokenProcess.GetUserIdFromJwtToken(authHeaderValue);
+            _logger.Log(LogLevel.Information, "Айди пользователя: " + userId.ToString());
+            bool result = await _handleMembers.RemoveUserFromGroupAsync(groupId, userId, delUserId);
+            if (result)
+            {
+                return Ok("Пользователь удалён.");
+            }
+            return BadRequest("Не удалось удалить пользователя.");
+        }
     }
 }

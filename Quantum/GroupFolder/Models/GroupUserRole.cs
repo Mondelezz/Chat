@@ -6,6 +6,7 @@ namespace Quantum.GroupFolder.Models
     {
         public Guid GroupId { get; set; }
         public Guid UserId { get; set; }
+        public DateTime JoinDate { get; set; }
         public RolesGroupType Role { get; set; }
     }
 }

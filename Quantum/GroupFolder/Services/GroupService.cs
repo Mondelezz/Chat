@@ -40,6 +40,7 @@ namespace Quantum.GroupFolder.Services
                 DescriptionGroup = descriptionGroup,
                 CountMembers = 1,
                 GroupRequestId = Guid.NewGuid(),
+                CreatedTime = DateTime.Now,
             };
             switch (access)
             {
@@ -59,7 +60,7 @@ namespace Quantum.GroupFolder.Services
             GroupUserRole newGroupUserRole = AddCreator(groupId, creatorId);
             _logger.Log(LogLevel.Information, $"creatorId: {newGroupUserRole.UserId} groupId: {newGroupUserRole.GroupId}");
 
-            bool result = await SaveToDatabase(group, newGroupUserRole);
+            bool result = await SaveToDatabaseAsync(group, newGroupUserRole);
             if (!result)
             {
                 throw new ArgumentException("Ошибка сохранения в базу данных");
@@ -83,13 +84,14 @@ namespace Quantum.GroupFolder.Services
             {
                 GroupId = groupId,
                 UserId = creatorId,
+                JoinDate = DateTime.UtcNow,
                 Role = RolesGroupType.Owner
             };
             _logger.Log(LogLevel.Information, $"GroupId: {groupId}\n UserId: {creatorId}\n Role: {RolesGroupType.Owner}");
             return newUserGroups;
         }
-        private async Task<bool> SaveToDatabase(Group group, GroupUserRole newGroupUserRole)
-        {           
+        private async Task<bool> SaveToDatabaseAsync(Group group, GroupUserRole newGroupUserRole)
+        {
             _logger.Log(LogLevel.Information, "Добавление группы в бд");
             await _dataContext.Groups.AddAsync(group);
 
@@ -111,7 +113,7 @@ namespace Quantum.GroupFolder.Services
 
             _logger.Log(LogLevel.Information, "Сохранение данных");
             await _dataContext.SaveChangesAsync();
-            
+
             return true;
 
         }
@@ -151,6 +153,12 @@ namespace Quantum.GroupFolder.Services
                 _logger.Log(LogLevel.Warning, "Человек, отправляющий приглашение не находится в группе");
                 return false;
             }
+            DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
+            UserGroups userInGroup = await userGroupsDb.FirstAsync(id => id.GroupId == groupId && id.UserId == receiverId);
+            if (userInGroup != null)
+            {
+                throw new Exception("Пользователь уже в группе.");
+            }
             // Добавление друга в ОТКРЫТУЮ группу
             if (group.StatusAccess)
             {
@@ -158,6 +166,7 @@ namespace Quantum.GroupFolder.Services
                 {
                     GroupId = groupId,
                     UserId = receiverId,
+                    JoinDate = DateTime.UtcNow,
                     Role = RolesGroupType.Member
                 };
                 _logger.Log(LogLevel.Information, $"GroupId: {groupId}\n UserId: {receiverId}\n Role: {RolesGroupType.Member}");
@@ -167,19 +176,18 @@ namespace Quantum.GroupFolder.Services
 
                 group.Members.Add(userGroups);
                 group.CountMembers++;
-
-                DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
+                
                 await userGroupsDb.AddAsync(userGroups);
                 _logger.Log(LogLevel.Information, "Пользователь добавлен");
 
                 _dataContext.Groups.Update(group);
                 _logger.Log(LogLevel.Information, "Данные обновлены");
-               
+
                 await _dataContext.SaveChangesAsync();
                 return true;
             }
             // Добавление друга в ЗАКРЫТУЮ группу
-            else if(!group.StatusAccess)
+            else if (!group.StatusAccess)
             {
                 // Доступ - закрытая: При приглашении друга - добавлять пользователя в заявки, о разрешении на принятие в группу.
                 User user = await _dataContext.Users.AsNoTracking().FirstAsync(id => id.UserId == receiverId);
@@ -188,12 +196,14 @@ namespace Quantum.GroupFolder.Services
                     _logger.Log(LogLevel.Warning, "Пользователя, которого приглашают не существует");
                     return false;
                 }
+
                 UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
 
                 GroupRequestUserInfoOutput groupRequestUserInfoOutput = new GroupRequestUserInfoOutput()
                 {
                     UserInfoOutputId = receiverId,
                     GroupRequestId = group.GroupRequestId,
+                    CreatedTime = DateTime.UtcNow,
                 };
 
                 DbSet<GroupRequestUserInfoOutput> groupRequestUserInfoOutputsDb = _dataContext.Set<GroupRequestUserInfoOutput>();
@@ -210,7 +220,7 @@ namespace Quantum.GroupFolder.Services
             else
             {
                 throw new Exception("Неизвестная команда");
-            }           
+            }
         }
         /// <summary>
         /// Отправка заявки в закрытую группу
@@ -222,11 +232,11 @@ namespace Quantum.GroupFolder.Services
         /// Айди отправителя заявки
         /// </param>
         /// <returns> Отправлена/ Не отправлена заявка </returns> 
-   
+
         // ДОДЕЛАТЬ
-        public async Task<bool> SendRequestClosedGroup(Guid groupId, Guid senderId)
+        public async Task<bool> SendRequestClosedGroupAsync(Guid groupId, Guid senderId)
         {
-            Group group = await _dataContext.Groups.Include(gr => gr.GroupRequest).FirstAsync(id => id.GroupId == groupId);
+            Group group = await _dataContext.Groups.Include(ug => ug.Members).Include(gr => gr.GroupRequest).FirstAsync(id => id.GroupId == groupId);
             if (group == null)
             {
                 _logger.Log(LogLevel.Warning, "Группы не существвует");
@@ -239,12 +249,19 @@ namespace Quantum.GroupFolder.Services
                 _logger.Log(LogLevel.Warning, "Пользователя не существует");
                 return false;
             }
+            DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
+            UserGroups userInGroup = await userGroupsDb.FirstAsync(id => id.GroupId == groupId && id.UserId == senderId);
+            if (userInGroup != null)
+            {
+                throw new Exception("Вы уже в группе.");
+            }
             UserInfoOutput userInfoOutput = _mapper.Map<UserInfoOutput>(user);
 
             GroupRequestUserInfoOutput groupRequestUserInfoOutput = new GroupRequestUserInfoOutput()
             {
                 UserInfoOutputId = senderId,
                 GroupRequestId = group.GroupRequestId,
+                CreatedTime = DateTime.UtcNow,
             };
 
             DbSet<GroupRequestUserInfoOutput> groupRequestUserInfoOutputsDb = _dataContext.Set<GroupRequestUserInfoOutput>();
@@ -253,7 +270,7 @@ namespace Quantum.GroupFolder.Services
 
             group.GroupRequest.CountRequests++;
             group.GroupRequest.GroupId = groupId;
-            
+
             await _dataContext.SaveChangesAsync();
             return true;
             // Заявка отправлена
@@ -269,9 +286,9 @@ namespace Quantum.GroupFolder.Services
         /// Айди отправителя заявки
         /// </param>
         /// <returns> Вступил/ Не встуипл </returns> 
-        public async Task<bool> SendRequestOpenGroup(Guid groupId, Guid senderId)
+        public async Task<bool> SendRequestOpenGroupAsync(Guid groupId, Guid senderId)
         {
-            Group group = await _dataContext.Groups.FirstAsync(id => id.GroupId == groupId);
+            Group group = await _dataContext.Groups.Include(ug => ug.Members).FirstAsync(id => id.GroupId == groupId);
             if (group == null)
             {
                 _logger.Log(LogLevel.Warning, "Группы не существвует");
@@ -289,6 +306,7 @@ namespace Quantum.GroupFolder.Services
             {
                 GroupId = groupId,
                 UserId = senderId,
+                JoinDate = DateTime.UtcNow,
                 Role = RolesGroupType.Member
             };
             _logger.Log(LogLevel.Information, $"GroupId: {groupId}\n UserId: {senderId}\n Role: {RolesGroupType.Member}");
@@ -307,15 +325,15 @@ namespace Quantum.GroupFolder.Services
             _logger.Log(LogLevel.Information, "Данные обновлены");
 
             await _dataContext.SaveChangesAsync();
-            return true;         
+            return true;
         }
 
-        public async Task<bool> AcceptRequests(Guid ownerId,Guid groupId, Guid userId)
+        public async Task<bool> AcceptRequestsAsync(Guid ownerId, Guid groupId, Guid userId)
         {
             Group group = await _dataContext.Groups.Include(u => u.Members).FirstAsync(i => i.GroupId == groupId);
             if (group == null)
             {
-                 throw new Exception("Группа не найдена");
+                throw new Exception("Группа не найдена");
             }
 
             GroupUserRole groupUserRole = await _dataContext.GroupUserRole.FirstAsync
@@ -342,6 +360,36 @@ namespace Quantum.GroupFolder.Services
             GroupRequest groupRequest = await _dataContext.GroupRequests.FirstAsync(gr => gr.GroupId == groupId);
             groupRequest.CountRequests--;
 
+            await _dataContext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> RemoveUserFromGroupAsync(Guid groupId,Guid userId, Guid delUserId)
+        {
+            Group group = await _dataContext.Groups.Include(u => u.Members).FirstAsync(i => i.GroupId == groupId);
+            if (group == null)
+            {
+                throw new Exception("Группа не найдена.");
+            }
+            GroupUserRole groupUserRole = await _dataContext.GroupUserRole.FirstAsync
+               (u => u.GroupId == group.GroupId
+                   &&
+               u.UserId == userId 
+                   &&
+               u.Role == RolesGroupType.Owner || u.Role == RolesGroupType.Admin);
+            if (groupUserRole == null)
+            {
+                throw new Exception("Недостаточно прав.");
+            }
+
+            DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
+            UserGroups userGroups = await userGroupsDb.FirstAsync(i => i.GroupId == groupId && i.UserId == delUserId);
+            if (userGroups == null)
+            {
+                throw new Exception("Пользователь не в группе.");
+            }
+            userGroupsDb.Remove(userGroups);
+            group.CountMembers--;
             await _dataContext.SaveChangesAsync();
             return true;
         }

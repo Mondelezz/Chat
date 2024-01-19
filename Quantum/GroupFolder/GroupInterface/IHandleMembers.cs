@@ -29,7 +29,7 @@ namespace Quantum.GroupFolder.GroupInterface
         /// Айди отправителя заявки
         /// </param>
         /// <returns> Отправлена/ Не отправлена заявка </returns> 
-        public Task<bool> SendRequestClosedGroup(Guid groupId, Guid senderId);
+        public Task<bool> SendRequestClosedGroupAsync(Guid groupId, Guid senderId);
 
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace Quantum.GroupFolder.GroupInterface
         /// Айди отправителя заявки
         /// </param>
         /// <returns> Вступил/ Не встуипл </returns> 
-        public Task<bool> SendRequestOpenGroup(Guid groupId, Guid senderId);
+        public Task<bool> SendRequestOpenGroupAsync(Guid groupId, Guid senderId);
 
 
         /// <summary>
@@ -63,8 +63,20 @@ namespace Quantum.GroupFolder.GroupInterface
         /// Айди группы
         /// </param>
         /// <returns>
-        /// 
+        /// Принятие
         /// </returns>
-        public Task<bool> AcceptRequests(Guid ownerId, Guid groupId, Guid userId);
+        public Task<bool> AcceptRequestsAsync(Guid ownerId, Guid groupId, Guid userId);
+        /// <summary>
+        /// Удаление пользователя из группы
+        /// </summary>
+        /// <param name="groupId"></param>
+        /// Айди группы
+        /// <param name="userId"></param>
+        /// Айди удаляющего
+        /// <param name="delUserId"></param>
+        /// Айди удаляемого
+        /// <returns></returns>
+
+        public Task<bool> RemoveUserFromGroupAsync(Guid groupId, Guid userId, Guid delUserId);
     }   
 }

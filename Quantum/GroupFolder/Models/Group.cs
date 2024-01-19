@@ -25,5 +25,6 @@ namespace Quantum.GroupFolder.Models
         public int CountMembers { get; set; } 
         // Ссылка - приглашение
         public string LinkInvitation { get; set; } = string.Empty;
+        public DateTime CreatedTime { get; set; }
     }
 }
