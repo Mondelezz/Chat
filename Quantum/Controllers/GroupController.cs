@@ -121,7 +121,7 @@ namespace Quantum.Controllers
             return BadRequest("Не удалось отправить приглшашение.");
         }
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [HttpPost("add")]
+        [HttpPost("handle_request")]
         public async Task<ActionResult<bool>> AcceptRequest(Guid groupId, Guid userId)
         {
             string authHeaderValue = ExtractAuthTokenFromHeaders();
@@ -153,6 +153,23 @@ namespace Quantum.Controllers
                 return Ok("Пользователь удалён.");
             }
             return BadRequest("Не удалось удалить пользователя.");
+        }
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("upRole")]
+        public async Task<ActionResult<GroupUserRole>> UpRoleAsync(Guid groupId, Guid userId)
+        {
+            string authHeaderValue = ExtractAuthTokenFromHeaders();
+            _logger.Log(LogLevel.Information, authHeaderValue);
+
+            Guid ownerId = _jwtTokenProcess.GetUserIdFromJwtToken(authHeaderValue);
+            _logger.Log(LogLevel.Information, "Айди владельца: " + ownerId.ToString());
+
+            GroupUserRole groupUserRole = await _handleMembers.UpRoleAsync(groupId, ownerId, userId);
+            if (groupUserRole != null) 
+            {
+                return Ok(groupUserRole);
+            }
+            return BadRequest("Не удалось повысить в роли.");
         }
     }
 }

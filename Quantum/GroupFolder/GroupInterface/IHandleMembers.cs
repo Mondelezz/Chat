@@ -56,6 +56,7 @@ namespace Quantum.GroupFolder.GroupInterface
         /// </param>
         /// <returns>Добавление владельца</returns>
         public GroupUserRole AddCreator(Guid groupId, Guid creatorId);
+
         /// <summary>
         /// Принятие заявки
         /// </summary>
@@ -66,6 +67,7 @@ namespace Quantum.GroupFolder.GroupInterface
         /// Принятие
         /// </returns>
         public Task<bool> AcceptRequestsAsync(Guid ownerId, Guid groupId, Guid userId);
+
         /// <summary>
         /// Удаление пользователя из группы
         /// </summary>
@@ -76,7 +78,19 @@ namespace Quantum.GroupFolder.GroupInterface
         /// <param name="delUserId"></param>
         /// Айди удаляемого
         /// <returns></returns>
-
         public Task<bool> RemoveUserFromGroupAsync(Guid groupId, Guid userId, Guid delUserId);
+
+        /// <summary>
+        /// Повышение роли
+        /// </summary>
+        /// <param name="groupId">
+        /// Айди группы
+        /// </param>
+        /// <param name="userId">
+        /// Айди пользователя, которому повышаем рол
+        /// </param>
+        /// <returns></returns>
+        public Task<GroupUserRole> UpRoleAsync(Guid groupId,Guid ownerId, Guid userId);
+
     }   
 }

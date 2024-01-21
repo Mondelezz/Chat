@@ -6,7 +6,6 @@ using Quantum.GroupFolder.Enums;
 using Quantum.GroupFolder.GroupInterface;
 using Quantum.GroupFolder.Models;
 using Quantum.UserP.Models;
-using System.Text.RegularExpressions;
 using Group = Quantum.GroupFolder.Models.Group;
 
 namespace Quantum.GroupFolder.Services
@@ -40,7 +39,7 @@ namespace Quantum.GroupFolder.Services
                 DescriptionGroup = descriptionGroup,
                 CountMembers = 1,
                 GroupRequestId = Guid.NewGuid(),
-                CreatedTime = DateTime.Now,
+                CreatedTime = DateTime.UtcNow,
             };
             switch (access)
             {
@@ -154,7 +153,7 @@ namespace Quantum.GroupFolder.Services
                 return false;
             }
             DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
-            UserGroups userInGroup = await userGroupsDb.FirstAsync(id => id.GroupId == groupId && id.UserId == receiverId);
+            UserGroups? userInGroup = await userGroupsDb.FirstOrDefaultAsync(id => id.GroupId == groupId && id.UserId == receiverId);
             if (userInGroup != null)
             {
                 throw new Exception("Пользователь уже в группе.");
@@ -250,7 +249,7 @@ namespace Quantum.GroupFolder.Services
                 return false;
             }
             DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
-            UserGroups userInGroup = await userGroupsDb.FirstAsync(id => id.GroupId == groupId && id.UserId == senderId);
+            UserGroups? userInGroup = await userGroupsDb.FirstOrDefaultAsync(id => id.GroupId == groupId && id.UserId == senderId);
             if (userInGroup != null)
             {
                 throw new Exception("Вы уже в группе.");
@@ -330,7 +329,7 @@ namespace Quantum.GroupFolder.Services
 
         public async Task<bool> AcceptRequestsAsync(Guid ownerId, Guid groupId, Guid userId)
         {
-            Group group = await _dataContext.Groups.Include(u => u.Members).FirstAsync(i => i.GroupId == groupId);
+            Group group = await _dataContext.Groups.AsNoTracking().Include(u => u.Members).FirstAsync(i => i.GroupId == groupId);
             if (group == null)
             {
                 throw new Exception("Группа не найдена");
@@ -348,7 +347,7 @@ namespace Quantum.GroupFolder.Services
             }
 
             DbSet<GroupRequestUserInfoOutput> groupRequestUserInfoOutputsDb = _dataContext.Set<GroupRequestUserInfoOutput>();
-            GroupRequestUserInfoOutput request = await groupRequestUserInfoOutputsDb.FirstAsync(
+            GroupRequestUserInfoOutput? request = await groupRequestUserInfoOutputsDb.FirstOrDefaultAsync(
                 u => u.UserInfoOutputId == userId
                     &&
                 u.GroupRequestId == group.GroupRequestId);
@@ -383,7 +382,7 @@ namespace Quantum.GroupFolder.Services
             }
 
             DbSet<UserGroups> userGroupsDb = _dataContext.Set<UserGroups>();
-            UserGroups userGroups = await userGroupsDb.FirstAsync(i => i.GroupId == groupId && i.UserId == delUserId);
+            UserGroups? userGroups = await userGroupsDb.FirstOrDefaultAsync(id => id.GroupId == groupId && id.UserId == delUserId);
             if (userGroups == null)
             {
                 throw new Exception("Пользователь не в группе.");
@@ -392,6 +391,35 @@ namespace Quantum.GroupFolder.Services
             group.CountMembers--;
             await _dataContext.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<GroupUserRole> UpRoleAsync(Guid groupId, Guid ownerId, Guid userId)
+        {
+            Group group = await _dataContext.Groups.AsNoTracking().Include(u => u.Members).FirstAsync(g => g.GroupId == groupId);
+            if (group == null)
+            {
+                throw new Exception("Группа не найдена.");
+            }
+            UserGroups? userGroups = group.Members.FirstOrDefault(u => u.UserId == userId);
+            if (userGroups == null)
+            {
+                throw new Exception("Пользователь в группе не найден.");
+            }
+            GroupUserRole? roleError = userGroups.User?.Roles.FirstOrDefault(g => g.GroupId == groupId && (g.Role == RolesGroupType.Admin || g.Role == RolesGroupType.Owner) && g.UserId == userId);
+            if (roleError != null)
+            {
+                throw new Exception("Невозможно повысить роль выше админа.");
+            }
+            GroupUserRole groupUserRole = await _dataContext.GroupUserRole.FirstAsync(o => o.UserId == ownerId && o.Role == RolesGroupType.Owner);
+            if (groupUserRole == null)
+            {
+                throw new Exception("Не удовлетворяет условию для повышенимя роли.");
+            }
+            GroupUserRole groupUserRoleUpdate = await _dataContext.GroupUserRole.FirstAsync(u => u.UserId == userId);
+            groupUserRoleUpdate.Role = RolesGroupType.Admin;
+            _dataContext.GroupUserRole.Update(groupUserRoleUpdate);
+            await _dataContext.SaveChangesAsync();
+            return groupUserRoleUpdate;
         }
     }
 }
